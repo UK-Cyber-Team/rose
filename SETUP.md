@@ -1,15 +1,16 @@
-# Setup notes for Tulip made by Nick.
+# Setup notes for Tulip made by Nick and Isaiah.
 
 ## Vulnbox side
 ```
-mkdir -p /tmp/tcpdump
-tcpdump -i game -nn -C 100 -W 10 -w /tmp/tcpdump/traffic.pcap
+mkdir -p /var/tmp/tcpdump/
+tcpdump -i game -nn -C 100 -W 100 -w /var/tmp/tcpdump/traffic.pcap
 ```
 
 Remember that we can edit the tcpdump command to only take traffic from ports we care about to reduce noise
 
 ## Tulip host
 Create `.env` with `cp .env.example .env`
+There's also cwte.env, which is the tulip configuration used during CWTE.
 ### Edit .env:
 ```
 TRAFFIC_DIR_HOST="/tmp/tcpdump"
@@ -33,8 +34,34 @@ helper = '''
 10.100.2.1:5000 exchange
 '''
 
-### Run rsync
-`rsync -avz --delete root@[VULNBOX IP ADDRESS]:/tmp/tcpdump/ /tmp/tcpdump/`        
+### Save the below script on the infra box:
+```bash
+#!/bin/bash
+# Sync pcap files from remote server to infra server using rsync and sshpass
+# Change IP address and password as needed
+# Ensure that this is added to crontab for periodic sync
+# Change the paths as needed
+
+# Remote and local paths
+REMOTE="root@[IP_ADDRESS]:/var/tmp/tcpdump/"
+LOCAL="/home/tooling/tulip/traffic/tcpdump/"
+
+# Password for SSH
+PASSWORD="[PASSWORD]"
+
+# Install sshpass and rsync if not present
+sudo apt-get install -y sshpass rsync
+
+# Run rsync with sshpass
+sshpass -p "$PASSWORD" rsync -rlpgoDvc --delete "$REMOTE" "$LOCAL"
+```
+
+Remember to make it executable with `chmod +x [script]`
+
+Add the script to crontab with `crontab -e` copying the below line:
+```
+* * * * * [path to script] >> [path to logs] 2>&1
+```
 
 ## Start 
-`sudo docker compose up -d`
+`sudo docker compose up --build -d`
