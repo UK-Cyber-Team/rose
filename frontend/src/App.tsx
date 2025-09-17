@@ -78,7 +78,7 @@ function PageNotFound() {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8">
       <img src={notFoundImage} alt="404 - Page Not Found" className="max-w-md mb-4" />
-      <h2 className="text-2xl font-bold text-gray-700">404 Page not found</h2>
+      <h2 className="text-2xl font-bold text-gray-700">how the fuck did you end up here</h2>
     </div>
   );
 }
