@@ -27,10 +27,12 @@ import os
 import re
 import traceback
 import uuid
-from flask import Flask, Response, send_file
+from flask import Flask, Response, send_file, session, jsonify
+from flask_session import Session
 from requests import get
 import dateutil.parser
 from ipaddress import ip_network
+from functools import wraps
 
 from configurations import (
     services,
@@ -41,6 +43,7 @@ from configurations import (
     flag_lifetime,
     flag_regex,
     dump_pcaps_dir,
+    auth_password,
 )
 from pathlib import Path
 from data2req import convert_flow_to_http_requests, convert_single_http_requests
@@ -51,7 +54,13 @@ from flow2pwn import flow2pwn
 import database, json_util
 
 application = Flask(__name__)
-CORS(application)
+application.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+application.config['SESSION_TYPE'] = 'filesystem'
+application.config['SESSION_FILE_DIR'] = '/tmp/flask_sessions'
+application.config['SESSION_PERMANENT'] = False
+application.config['SESSION_USE_SIGNER'] = True
+Session(application)
+CORS(application, supports_credentials=True)
 db = database.Pool(os.environ["TIMESCALE"])
 
 
@@ -63,12 +72,72 @@ def return_text_response(object, **kwargs):
     return Response(object, mimetype="text/plain", **kwargs)
 
 
+def requires_auth(f):
+    """Decorator to require authentication for API endpoints"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # If no password is configured, allow access
+        if not auth_password:
+            return f(*args, **kwargs)
+        
+        # Check if user is authenticated
+        if not session.get('authenticated'):
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def is_authenticated():
+    """Check if user is authenticated"""
+    if not auth_password:
+        return True
+    return session.get('authenticated', False)
+
+
 @application.route("/")
 def hello_world():
     return "Hello, World!"
 
 
+@application.route("/auth/status")
+def auth_status():
+    """Check authentication status"""
+    return return_json_response({
+        'authenticated': is_authenticated(),
+        'auth_required': bool(auth_password)
+    })
+
+
+@application.route("/auth/login", methods=['POST'])
+def login():
+    """Login endpoint"""
+    if not auth_password:
+        return return_json_response({'error': 'Authentication not configured'}), 400
+    
+    if not request.is_json:
+        return return_json_response({'error': 'Content-Type must be application/json'}), 400
+    
+    data = request.get_json()
+    if not data or 'password' not in data:
+        return return_json_response({'error': 'Password required'}), 400
+    
+    if data['password'] == auth_password:
+        session['authenticated'] = True
+        return return_json_response({'success': True, 'authenticated': True})
+    else:
+        return return_json_response({'error': 'Invalid password'}), 401
+
+
+@application.route("/auth/logout", methods=['POST'])
+def logout():
+    """Logout endpoint"""
+    session.pop('authenticated', None)
+    return return_json_response({'success': True, 'authenticated': False})
+
+
 @application.route("/tick_info")
+@requires_auth
 def getTickInfo():
     data = {
         "startDate": start_date,
@@ -79,6 +148,7 @@ def getTickInfo():
 
 
 @application.route("/query", methods=["POST"])
+@requires_auth
 def query():
     query = request.get_json()
 
@@ -120,6 +190,7 @@ def query():
 
 
 @application.route("/stats")
+@requires_auth
 def getStats():
     query = request.args
 
@@ -136,6 +207,7 @@ def getStats():
 
 
 @application.route("/under_attack")
+@requires_auth
 def getUnderAttack():
     res = get(
         f"{visualizer_url}/api/under-attack",
@@ -151,6 +223,7 @@ def getUnderAttack():
 
 
 @application.route("/tags")
+@requires_auth
 def getTags():
     with db.connection() as c:
         tags = c.tag_list()
@@ -158,6 +231,7 @@ def getTags():
 
 
 @application.route("/star", methods=["POST"])
+@requires_auth
 def setStar():
     query = request.get_json()
     flow_id = uuid.UUID(query.get("id"))
@@ -168,16 +242,19 @@ def setStar():
 
 
 @application.route("/services")
+@requires_auth
 def getServices():
     return return_json_response(services)
 
 
 @application.route("/flag_regex")
+@requires_auth
 def getFlagRegex():
     return return_json_response(flag_regex)
 
 
 @application.route("/flow/<id>")
+@requires_auth
 def getFlowDetail(id):
     id = uuid.UUID(id)
     with db.connection() as c:
@@ -186,6 +263,7 @@ def getFlowDetail(id):
 
 
 @application.route("/to_single_python_request", methods=["POST"])
+@requires_auth
 def convertToSingleRequest():
     flow_id = request.args.get("id", "")
     item_index = request.args.get("index", "")
@@ -236,6 +314,7 @@ def convertToSingleRequest():
 
 
 @application.route("/to_python_request/<id>")
+@requires_auth
 def convertToRequests(id):
     id = uuid.UUID(id)
     with db.connection() as c:
@@ -260,6 +339,7 @@ def convertToRequests(id):
 
 
 @application.route("/to_pwn/<id>")
+@requires_auth
 def confertToPwn(id):
     id = uuid.UUID(id)
     with db.connection() as c:
@@ -274,6 +354,7 @@ def confertToPwn(id):
 
 
 @application.route("/download/")
+@requires_auth
 def downloadFile():
     filepath = request.args.get("file")
     if filepath is None:

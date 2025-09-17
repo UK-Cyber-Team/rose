@@ -22,7 +22,15 @@ function base64DecodeUnicode(str: string) : string {
 }
 
 export const tulipApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_PATH }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: API_BASE_PATH,
+    credentials: 'include',
+    prepareHeaders: (headers, { getState }) => {
+      headers.set('Content-Type', 'application/json');
+      return headers;
+    },
+  }),
+  tagTypes: ['Auth'],
   endpoints: (builder) => ({
     getServices: builder.query<Service[], void>({
       query: () => "/services",
@@ -189,6 +197,26 @@ export const tulipApi = createApi({
       //   }
       // },
     }),
+    // Authentication endpoints
+    checkAuthStatus: builder.query<{ authenticated: boolean; auth_required: boolean }, void>({
+      query: () => '/auth/status',
+      providesTags: ['Auth'],
+    }),
+    login: builder.mutation<{ success: boolean; authenticated: boolean }, { password: string }>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
+      invalidatesTags: ['Auth'],
+    }),
+    logout: builder.mutation<{ success: boolean; authenticated: boolean }, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Auth'],
+    }),
   }),
 });
 
@@ -206,4 +234,7 @@ export const {
   useStarFlowMutation,
   useGetStatsQuery,
   useGetUnderAttackQuery,
+  useCheckAuthStatusQuery,
+  useLoginMutation,
+  useLogoutMutation,
 } = tulipApi;

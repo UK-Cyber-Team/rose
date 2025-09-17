@@ -1,4 +1,6 @@
-# 🌷 Tulip
+# 🥀 Rose
+
+> This was named by the Irish!
 
 Tulip is a flow analyzer meant for use during Attack / Defence CTF competitions. It allows players to easily find some traffic related to their service and automatically generates python snippets to replicate attacks.
 

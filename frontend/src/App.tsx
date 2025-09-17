@@ -9,42 +9,45 @@ import { FlowList } from "./components/FlowList";
 import { FlowView } from "./pages/FlowView";
 import { DiffView } from "./pages/DiffView";
 import { Corrie } from "./components/Corrie";
+import { AuthWrapper } from "./components/AuthWrapper";
 
 function App() {
   useHotkeys('esc', () => (document.activeElement as HTMLElement).blur(), {enableOnFormTags: true});
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route
-            path="flow/:id"
-            element={
-              <Suspense>
-                <FlowView />
-              </Suspense>
-            }
-          />
-          <Route
-            path="diff/:id"
-            element={
-              <Suspense>
-                <DiffView />
-              </Suspense>
-            }
-          />
-          <Route
-            path="corrie/"
-            element={
-              <Suspense>
-                <Corrie />
-              </Suspense>
-            }
-          />
-        </Route>
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthWrapper>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route
+              path="flow/:id"
+              element={
+                <Suspense>
+                  <FlowView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="diff/:id"
+              element={
+                <Suspense>
+                  <DiffView />
+                </Suspense>
+              }
+            />
+            <Route
+              path="corrie/"
+              element={
+                <Suspense>
+                  <Corrie />
+                </Suspense>
+              }
+            />
+          </Route>
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthWrapper>
   );
 }
 

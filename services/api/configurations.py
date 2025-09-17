@@ -33,6 +33,7 @@ start_date = os.getenv("TICK_START", "2018-06-27T13:00:00+02:00")
 flag_regex = os.getenv("FLAG_REGEX", "[A-Z0-9]{31}=")
 vm_ip = os.getenv("VM_IP", "10.10.3.1")
 visualizer_url = os.getenv("VISUALIZER_URL", "http://127.0.0.1:1337")
+auth_password = os.getenv("AUTH_PASSWORD", "")
 
 vm_ip_1 = "10.60.2.1"
 helper = '''
