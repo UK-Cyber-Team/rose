@@ -1,5 +1,6 @@
 Flask_Cors
 Flask
+Flask-Session
 requests
 python-dateutil
 psycopg[binary,pool]

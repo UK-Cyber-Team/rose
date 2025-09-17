@@ -50,6 +50,7 @@ services:
       - internal
     volumes:
       - ${TRAFFIC_DIR_HOST}:${TRAFFIC_DIR_DOCKER}:ro,z
+      - flask-sessions:/tmp/flask_sessions
     environment:
       TIMESCALE: ${TIMESCALE}
       TULIP_TRAFFIC_DIR: ${TRAFFIC_DIR_DOCKER}
@@ -57,6 +58,8 @@ services:
       TICK_START: ${TICK_START}
       TICK_LENGTH: ${TICK_LENGTH}
       VM_IP: ${VM_IP}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
 
   flagids:
     restart: unless-stopped
@@ -131,6 +134,7 @@ services:
 
 volumes:
   timescale-data:
+  flask-sessions:
 
 networks:
   internal:

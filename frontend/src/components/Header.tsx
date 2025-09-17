@@ -22,8 +22,40 @@ import {
 import {
   useGetFlowQuery,
   useGetServicesQuery,
+  useLogoutMutation,
 } from "../api";
+import { useAppSelector, useAppDispatch } from "../store";
+import { logout } from "../store/auth";
 import { getTickStuff } from "../tick";
+
+function LogoutButton() {
+  const dispatch = useAppDispatch();
+  const { authRequired } = useAppSelector((state) => state.auth);
+  const [logoutMutation] = useLogoutMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation().unwrap();
+      dispatch(logout());
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  // Only show logout button if authentication is required
+  if (!authRequired) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={handleLogout}
+      className="ml-4 bg-red-100 hover:bg-red-200 text-red-800 rounded-md px-2 py-1 text-sm"
+    >
+      Logout
+    </button>
+  );
+}
 
 function ServiceSelection() {
   const FILTER_KEY = SERVICE_FILTER_KEY;
@@ -312,6 +344,7 @@ export function Header() {
         >
           Current: {currentTick}
         </div>
+        <LogoutButton />
       </div>
     </>
   );
