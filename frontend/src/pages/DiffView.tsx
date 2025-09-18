@@ -11,8 +11,11 @@ import { hexy } from "hexy";
 
 import { FIRST_DIFF_KEY, SECOND_DIFF_KEY } from "../const";
 import { useGetFlowQuery } from "../api";
+import { useDarkMode } from "../contexts/DarkModeContext";
 
 function Flow(flow1: string, flow2: string) {
+  const { isDarkMode } = useDarkMode();
+  
   return (
     <div>
       <ReactDiffViewer
@@ -20,7 +23,7 @@ function Flow(flow1: string, flow2: string) {
         newValue={flow2}
         splitView={true}
         showDiffOnly={false}
-        useDarkTheme={false}
+        useDarkTheme={isDarkMode}
         hideLineNumbers={true}
         styles={{
           line: {
@@ -104,12 +107,12 @@ export function DiffView() {
 
   return (
     <div>
-      <div className="sticky shadow-md bg-white overflow-auto py-1 border-y flex items-center">
+      <div className="sticky shadow-md bg-white dark:bg-gray-800 overflow-auto py-1 border-y border-gray-200 dark:border-gray-600 flex items-center">
         <RadioGroup
           options={displayOptions}
           value={displayOption}
           onChange={setDisplayOption}
-          className="flex gap-2 text-gray-800 text-sm mr-4"
+          className="flex gap-2 text-gray-800 dark:text-gray-200 text-sm mr-4"
         />
       </div>
 

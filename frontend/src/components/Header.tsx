@@ -78,6 +78,7 @@ function ServiceSelection() {
   let [searchParams, setSearchParams] = useSearchParams();
   return (
     <select
+      className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
       value={searchParams.get(FILTER_KEY) ?? ""}
       onChange={(event) => {
         let serviceFilter = event.target.value;
@@ -90,7 +91,7 @@ function ServiceSelection() {
       }}
     >
       {service_select.map((service) => (
-        <option key={service.name} value={service.name}>
+        <option key={service.name} value={service.name} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
           {service.name}
         </option>
       ))}

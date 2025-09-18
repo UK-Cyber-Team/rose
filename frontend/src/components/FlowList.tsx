@@ -228,7 +228,7 @@ export function FlowList() {
         )}
       </div>
       <div></div>
-      { searchMessage && <div className="text-gray-600 dark:text-gray-300 p-2">{searchMessage}</div> }
+      { searchMessage && <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-2 border-b border-blue-200 dark:border-blue-800">{searchMessage}</div> }
       <Virtuoso
         className={classNames({
           "flex-1": true,

@@ -67,8 +67,8 @@ export const Corrie = () => {
     setSearchParams(searchParams);
   };
 
-  const inactiveButtonClass = "bg-blue-100 text-gray-800 rounded-md px-2 py-1";
-  const activeButtonClass = `${inactiveButtonClass} ring-2 ring-gray-500`;
+  const inactiveButtonClass = "bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1";
+  const activeButtonClass = `${inactiveButtonClass} ring-2 ring-gray-500 dark:ring-gray-400`;
 
   const navigate = useNavigate();
   const onClickNavigate = useCallback(
@@ -149,9 +149,9 @@ export const Corrie = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-sm bg-white border-b-gray-300 border-b shadow-md flex flex-col">
+      <div className="text-sm bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex space-x-2" style={{ height: 50 }}>
-          <a className="text-center px-2 py-2">Correlation mode: </a>
+          <a className="text-center px-2 py-2 text-gray-900 dark:text-gray-100">Correlation mode: </a>
           <button
             className={mode == "time" ? activeButtonClass : inactiveButtonClass}
             onClick={() => setCorrelationMode("time")}

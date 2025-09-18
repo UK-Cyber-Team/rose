@@ -637,21 +637,21 @@ export function FlowView() {
           </div>
         ) : undefined}
         <div className="flex align-middle p-2 gap-3 ml-auto">
-          <p className="my-auto">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
+          <p className="my-auto text-gray-900 dark:text-gray-100">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
           <select
             id="repr-select"
             value={reprId}
-            className="border-2 border-gray-700 text-black px-2 text-sm rounded-md"
+            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-gray-800 text-black dark:text-gray-100 px-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             onChange={(e) => {
               const target = e.target as HTMLSelectElement;
               const newreprid = parseInt(target.value);
               setReprId(newreprid);
             }}
           >
-            {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i}>{e["type"]}</option>)}
+            {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i} className="bg-white dark:bg-gray-800 text-black dark:text-gray-100">{e["type"]}</option>)}
           </select>
           {reprId > 0 ? <button
-            className="bg-gray-700 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
             title="Diff this representation with the base"
             onClick={(e) => {
               searchParams.set(FIRST_DIFF_KEY, `${id}`);
@@ -662,7 +662,7 @@ export function FlowView() {
             <LightningBoltIcon className="h-5 w-5"></LightningBoltIcon>
           </button> : undefined}
           <button
-            className="bg-gray-700 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
             onClick={copyPwn}
           >
             {pwnCopyStatusText}
