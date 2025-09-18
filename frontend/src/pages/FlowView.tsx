@@ -68,7 +68,7 @@ function FlowContainer({
       <div className="ml-auto">
         <CopyButton copyText={copyText}></CopyButton>
       </div>
-      <pre className="p-5 overflow-auto">{children}</pre>
+      <pre className="p-5 overflow-auto text-black dark:text-white">{children}</pre>
     </div>
   );
 }
@@ -82,8 +82,8 @@ function highlightText(flowText: string, search_string: string, flag_string: str
     return flowText
   }
   try {
-    const searchClasses = "bg-orange-200 rounded-sm";
-    const flagClasses = "bg-red-200 rounded-sm";
+    const searchClasses = "bg-orange-200 dark:bg-orange-700 text-black dark:text-white rounded-sm";
+    const flagClasses = "bg-red-200 dark:bg-red-700 text-black dark:text-white rounded-sm";
 
     // Matches are stored as `[start index, end index]`.
     // For some reason tsc compiler (during build) thinks that `x.index` can be undefined (no, it can't).
@@ -258,9 +258,9 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
               <ArrowCircleRightIcon className="fill-red-700" />
             )}
           </div>
-          <div style={{ width: 200 }}>
+          <div style={{ width: 200 }} className="text-black dark:text-white">
             {formatted_time}
-            <span className="text-gray-400 pl-3">{delta_time}ms</span>
+            <span className="text-gray-400 dark:text-gray-500 pl-3">{delta_time}ms</span>
           </div>
           <button
             className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
@@ -370,27 +370,27 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
   return (
     <div>
       {flow.signatures?.length > 0 ? (
-        <div className="bg-blue-200 p-2">
-          <div className="font-extrabold">Suricata</div>
+        <div className="bg-blue-200 dark:bg-blue-800 p-2 text-black dark:text-white">
+          <div className="font-extrabold text-black dark:text-white">Suricata</div>
           <div className="pl-2">
             {flow.signatures.map((sig) => {
               return (
                 <div className="py-1">
                   <div className="flex">
-                    <div>Message:&nbsp;</div>
-                    <div className="font-bold">{sig.message}</div>
+                    <div className="text-black dark:text-white">Message:&nbsp;</div>
+                    <div className="font-bold text-black dark:text-white">{sig.message}</div>
                   </div>
                   <div className="flex">
-                    <div>Rule ID:&nbsp;</div>
-                    <div className="font-bold">{sig.id}</div>
+                    <div className="text-black dark:text-white">Rule ID:&nbsp;</div>
+                    <div className="font-bold text-black dark:text-white">{sig.id}</div>
                   </div>
                   <div className="flex">
-                    <div>Action taken:&nbsp;</div>
+                    <div className="text-black dark:text-white">Action taken:&nbsp;</div>
                     <div
                       className={
                         sig.action === "blocked"
-                          ? "font-bold text-red-800"
-                          : "font-bold text-green-800"
+                          ? "font-bold text-red-800 dark:text-red-300"
+                          : "font-bold text-green-800 dark:text-green-300"
                       }
                     >
                       {sig.action}
@@ -405,26 +405,26 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
       <div className="bg-yellow-200 dark:bg-yellow-800 p-2 text-black dark:text-white">
         <div className="font-extrabold text-black dark:text-white">Meta</div>
         <div className="pl-2">
-          <div>
+          <div className="text-black dark:text-white">
             Source:&nbsp;
             <a className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
               {flow.filename}
               <DownloadIcon className="inline-flex items-baseline w-5 h-5" />
             </a>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Tags:&nbsp;
             <span className="font-bold text-black dark:text-white">[{flow.tags.join(", ")}]</span>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Tick:&nbsp;
             <span className="font-bold text-black dark:text-white">{unixTimeToTick(flow.time)}</span>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Service:&nbsp;
             <span className="font-bold text-black dark:text-white">{service}</span>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Flags:&nbsp;
             <span className="font-bold text-black dark:text-white">
               [{flow.flags.map((query, i) => (
@@ -442,13 +442,13 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
               ))}]
             </span>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Flagids:&nbsp;
-            <span className="font-bold">
+            <span className="font-bold text-black dark:text-white">
               [{flow.flagids.map((query, i) => (
                 <span>
                   {i > 0 ? ", " : ""}
-                  <button className="font-bold"
+                  <button className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
                     onClick={() => {
                       searchParams.set(TEXT_FILTER_KEY, escapeStringRegexp(query));
                       setSearchParams(searchParams);
@@ -460,19 +460,19 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
               ))}]
             </span>
           </div>
-          <div>
+          <div className="text-black dark:text-white">
             Source - Target (Duration):&nbsp;
-            <div className="inline-flex items-center gap-1">
+            <div className="inline-flex items-center gap-1 text-black dark:text-white">
               <div>
-                <span>{formatIP(flow.src_ip)}</span>:
-                <span className="font-bold">{flow.src_port}</span>
+                <span className="text-black dark:text-white">{formatIP(flow.src_ip)}</span>:
+                <span className="font-bold text-black dark:text-white">{flow.src_port}</span>
               </div>
-              <span>-</span>
+              <span className="text-black dark:text-white">-</span>
               <div>
-                <span>{formatIP(flow.dst_ip)}</span>:
-                <span className="font-bold">{flow.dst_port}</span>
+                <span className="text-black dark:text-white">{formatIP(flow.dst_ip)}</span>:
+                <span className="font-bold text-black dark:text-white">{flow.dst_port}</span>
               </div>
-              <span className="italic">({flow.duration} ms)</span>
+              <span className="italic text-black dark:text-white">({flow.duration} ms)</span>
             </div>
           </div>
         </div>
