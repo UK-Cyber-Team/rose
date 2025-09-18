@@ -51,7 +51,7 @@ function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="ml-4 bg-red-100 hover:bg-red-200 text-red-800 rounded-md px-2 py-1 text-sm"
+      className="ml-4 bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-100 rounded-md px-2 py-1 text-sm"
     >
       Logout
     </button>
@@ -113,6 +113,7 @@ function TextSearch() {
         type="text"
         placeholder="regex"
         id="search"
+        className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         value={searchParams.get(FILTER_KEY) || ""}
         onChange={(event) => {
           let textFilter = event.target.value;
@@ -134,7 +135,7 @@ function StartDateSelection() {
   return (
     <div>
       <input
-        className="w-20"
+        className="w-20 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         id="startdateselection"
         type="number"
         placeholder="from"
@@ -152,7 +153,7 @@ function EndDateSelection() {
   return (
     <div>
       <input
-        className="w-20"
+        className="w-20 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         id="enddateselection"
         type="number"
         placeholder="to"
@@ -193,7 +194,7 @@ function FirstDiff() {
   return (
     <input
       type="text"
-      className="md:w-72"
+      className="md:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
       placeholder="First Diff ID"
       readOnly
       value={firstFlow}
@@ -236,7 +237,7 @@ function SecondDiff() {
   return (
     <input
       type="text"
-      className="md:w-72"
+      className="md:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
       placeholder="Second Flow ID"
       readOnly
       value={secondFlow}
@@ -268,7 +269,7 @@ function Diff() {
 
   return (
     <button
-      className=" bg-amber-100 text-gray-800 rounded-md px-2 py-1"
+      className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-700 dark:hover:bg-amber-600 text-gray-800 dark:text-amber-100 rounded-md px-2 py-1"
       onClick={() => {
         navigateToDiff()
       }}
@@ -311,14 +312,14 @@ export function Header() {
       </div>
       <div>
         <button
-          className=" bg-amber-100 text-gray-800 rounded-md px-2 py-1"
+          className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-700 dark:hover:bg-amber-600 text-gray-800 dark:text-amber-100 rounded-md px-2 py-1"
           onClick={() => setToLastnTicks(5)}
         >
           Last 5 ticks
         </button>
       </div>
       <Link to={`/corrie?${searchParams}`}>
-        <div className="bg-blue-100 text-gray-800 rounded-md px-2 py-1">
+        <div className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1">
           Graph view
         </div>
       </Link>

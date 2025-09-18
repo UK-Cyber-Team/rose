@@ -402,12 +402,12 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
         </div>
       ) : undefined}
-      <div className="bg-yellow-200 p-2">
-        <div className="font-extrabold">Meta</div>
+      <div className="bg-yellow-200 p-2 text-black">
+        <div className="font-extrabold text-black">Meta</div>
         <div className="pl-2">
           <div>
             Source:&nbsp;
-            <a className="font-bold" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
+            <a className="font-bold text-black" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
               {flow.filename}
               <DownloadIcon className="inline-flex items-baseline w-5 h-5" />
             </a>
@@ -430,7 +430,7 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
               [{flow.flags.map((query, i) => (
                 <span>
                   {i > 0 ? ", " : ""}
-                  <button className="font-bold"
+                  <button className="font-bold text-black"
                     onClick={() => {
                       searchParams.set(TEXT_FILTER_KEY, escapeStringRegexp(query));
                       setSearchParams(searchParams);
@@ -607,7 +607,7 @@ export function FlowView() {
         {(flow?.child_id != null || flow?.parent_id != null) ? (
           <div className="flex align-middle p-2 gap-3">
             <button
-              className="bg-yellow-700 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
               key={"parent" + flow.parent_id}
               disabled={flow?.parent_id === null}
               onMouseDown={(e) => {
@@ -621,7 +621,7 @@ export function FlowView() {
               <ArrowCircleUpIcon className="inline-flex items-baseline w-5 h-5"></ArrowCircleUpIcon> Parent
             </button>
             <button
-              className="bg-yellow-700 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
               key={"child" + flow.child_id}
               disabled={flow?.child_id === null}
               onMouseDown={(e) => {

@@ -183,7 +183,7 @@ export function FlowList() {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex" style={{ height: 50 }}>
           <button
@@ -228,7 +228,7 @@ export function FlowList() {
         )}
       </div>
       <div></div>
-      { searchMessage && <div>{searchMessage}</div> }
+      { searchMessage && <div className="text-gray-600 dark:text-gray-300 p-2">{searchMessage}</div> }
       <Virtuoso
         className={classNames({
           "flex-1": true,
