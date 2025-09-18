@@ -1,5 +1,6 @@
 import classNames from "classnames";
 import Color from "color";
+import { useDarkMode } from "../contexts/DarkModeContext";
 
 const computeColorFromString = (str: string) => {
   const hue = Array.from(str).reduce(
@@ -9,16 +10,20 @@ const computeColorFromString = (str: string) => {
   return Color(`hsl(${hue}, 100%, 50%)`).hex();
 };
 
-// Hardcode colors here
-const tagColorMap: Record<string, string> = {
-  fishy: "rgb(191, 219, 254)",
-  blocked: "rgb(233, 213, 255)",
-  flag_out: "rgb(254, 204, 204)",
-  flag_in: "rgb(209, 213, 219)",
+// Hardcode colors here - with dark mode variants
+const tagColorMap: Record<string, { light: string; dark: string }> = {
+  fishy: { light: "rgb(191, 219, 254)", dark: "rgb(59, 130, 246)" },
+  blocked: { light: "rgb(233, 213, 255)", dark: "rgb(147, 51, 234)" },
+  flag_out: { light: "rgb(254, 204, 204)", dark: "rgb(239, 68, 68)" },
+  flag_in: { light: "rgb(209, 213, 219)", dark: "rgb(107, 114, 128)" },
 };
 
-export function tagToColor(tag: string) {
-  return tagColorMap[tag] ?? computeColorFromString(tag);
+export function tagToColor(tag: string, isDarkMode: boolean = false) {
+  const colorEntry = tagColorMap[tag];
+  if (colorEntry) {
+    return isDarkMode ? colorEntry.dark : colorEntry.light;
+  }
+  return computeColorFromString(tag);
 }
 interface TagProps {
   tag: string;
@@ -28,18 +33,21 @@ interface TagProps {
   onClick?: () => void;
 }
 export const Tag = ({ tag, color, disabled = false, excluded = false, onClick }: TagProps) => {
-  var tagBackgroundColor = disabled ? "#eee" : color ?? tagToColor(tag);
+  const { isDarkMode } = useDarkMode();
+  
+  var tagBackgroundColor = disabled 
+    ? (isDarkMode ? "#4b5563" : "#eee") 
+    : color ?? tagToColor(tag, isDarkMode);
 
   var tagTextColor = disabled
-    ? "#bbb"
+    ? (isDarkMode ? "#9ca3af" : "#bbb")
     : Color(tagBackgroundColor).isDark()
       ? "#fff"
       : "#000";
 
-
   if (excluded) {
     tagTextColor = "white";
-    tagBackgroundColor = "black";
+    tagBackgroundColor = isDarkMode ? "#1f2937" : "black";
   }
   return (
     <div

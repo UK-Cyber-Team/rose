@@ -263,7 +263,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
             <span className="text-gray-400 pl-3">{delta_time}ms</span>
           </div>
           <button
-            className="bg-gray-200 py-1 px-2 rounded-md text-sm"
+            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
             onClick={async () => {
               window.open(
                 "https://gchq.github.io/CyberChef/#input=" +
@@ -275,7 +275,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
           </button>
           {flowType == "Web" && flowBody && (
             <button
-              className="bg-gray-200 py-1 px-2 rounded-md text-sm ml-2"
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm ml-2"
               onClick={async () => {
                 window.open(
                   "https://gchq.github.io/CyberChef/#input=" +
@@ -287,7 +287,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
             </button>
           )}
           <button
-            className="bg-gray-200 py-1 px-2 rounded-md text-sm ml-2"
+            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm ml-2"
             onClick={async () => {
               const blob = new Blob([Buffer.from(flow.b64, "base64")], {
                 type: "application/octet-stream",
@@ -307,7 +307,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
           </button>
           {flowType == "Web" && flowBody && (
             <button
-              className="bg-gray-200 py-1 px-2 rounded-md text-sm ml-2"
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm ml-2"
               onClick={async () => {
                 const blob = new Blob([flowBody[1]], {
                   type: flowBody[0].toString(),
@@ -407,7 +407,7 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
         <div className="pl-2">
           <div>
             Source:&nbsp;
-            <a className="font-bold text-black" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
+            <a className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
               {flow.filename}
               <DownloadIcon className="inline-flex items-baseline w-5 h-5" />
             </a>

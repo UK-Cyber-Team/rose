@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { Flow, Stats, TicksAttackInfo } from "../types";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   SERVICE_FILTER_KEY,
   TEXT_FILTER_KEY,
@@ -43,6 +44,7 @@ interface GraphProps {
 }
 
 export const Corrie = () => {
+  const { isDarkMode } = useDarkMode();
   const { data: services } = useGetServicesQuery();
   const includeTags = useAppSelector((state) => state.filter.includeTags);
   const excludeTags = useAppSelector((state) => state.filter.excludeTags);
@@ -195,14 +197,14 @@ export const Corrie = () => {
       <div className="flex-1 w-full overflow-hidden p-4">
         {(mode == "packets" || mode == "time") && TimePacketGraph(graphProps)}
         {mode == "volume" && VolumeGraph(graphProps)}
-        {(mode == "tags" || mode == "flags") && BarPerTickGraph(graphProps, mode)}
+        {(mode == "tags" || mode == "flags") && BarPerTickGraph(graphProps, mode, isDarkMode)}
         {(mode == "under-attack") && UnderAttackGraph(graphProps)}
       </div>
     </div>
   );
 };
 
-function BarPerTickGraph(graphProps: GraphProps, mode: string) {
+function BarPerTickGraph(graphProps: GraphProps, mode: string, isDarkMode: boolean) {
   const statsList = graphProps.statsList;
   const searchParams = graphProps.searchParams;
   const setSearchParams = graphProps.setSearchParams;
@@ -288,14 +290,14 @@ function BarPerTickGraph(graphProps: GraphProps, mode: string) {
   let series: ApexAxisChartSeries = [];
 
   const colors: any = {
-    "tag_flag_in": tagToColor("flag-in"),
-    "tag_flag_out": tagToColor("flag-out"),
-    "tag_enemy": tagToColor("enemy"),
-    "tag_blocked": tagToColor("blocked"),
-    "tag_suricata": tagToColor("suricata"),
+    "tag_flag_in": tagToColor("flag-in", isDarkMode),
+    "tag_flag_out": tagToColor("flag-out", isDarkMode),
+    "tag_enemy": tagToColor("enemy", isDarkMode),
+    "tag_blocked": tagToColor("blocked", isDarkMode),
+    "tag_suricata": tagToColor("suricata", isDarkMode),
 
-    "flag_in": tagToColor("flag-in"),
-    "flag_out": tagToColor("flag-out"),
+    "flag_in": tagToColor("flag-in", isDarkMode),
+    "flag_out": tagToColor("flag-out", isDarkMode),
   };
 
   Object.keys(colors).forEach(t => {
