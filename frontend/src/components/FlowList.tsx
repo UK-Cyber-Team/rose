@@ -235,6 +235,7 @@ export function FlowList() {
           [classes.list_container]: true,
           "sidebar-loading": isLoading,
         })}
+        style={{ backgroundColor: 'transparent' }}
         data={transformedFlowData}
         ref={virtuoso}
         initialTopMostItemIndex={flowIndex}

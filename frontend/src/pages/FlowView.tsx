@@ -402,8 +402,8 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
         </div>
       ) : undefined}
-      <div className="bg-yellow-200 p-2 text-black">
-        <div className="font-extrabold text-black">Meta</div>
+      <div className="bg-yellow-200 dark:bg-yellow-800 p-2 text-black dark:text-white">
+        <div className="font-extrabold text-black dark:text-white">Meta</div>
         <div className="pl-2">
           <div>
             Source:&nbsp;
@@ -414,23 +414,23 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
           <div>
             Tags:&nbsp;
-            <span className="font-bold">[{flow.tags.join(", ")}]</span>
+            <span className="font-bold text-black dark:text-white">[{flow.tags.join(", ")}]</span>
           </div>
           <div>
             Tick:&nbsp;
-            <span className="font-bold">{unixTimeToTick(flow.time)}</span>
+            <span className="font-bold text-black dark:text-white">{unixTimeToTick(flow.time)}</span>
           </div>
           <div>
             Service:&nbsp;
-            <span className="font-bold">{service}</span>
+            <span className="font-bold text-black dark:text-white">{service}</span>
           </div>
           <div>
             Flags:&nbsp;
-            <span className="font-bold">
+            <span className="font-bold text-black dark:text-white">
               [{flow.flags.map((query, i) => (
                 <span>
                   {i > 0 ? ", " : ""}
-                  <button className="font-bold text-black"
+                  <button className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
                     onClick={() => {
                       searchParams.set(TEXT_FILTER_KEY, escapeStringRegexp(query));
                       setSearchParams(searchParams);
