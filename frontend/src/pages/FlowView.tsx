@@ -247,7 +247,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
   return (
     <div className="text-mono" id={id}>
       <div
-        className="sticky shadow-md bg-white dark:bg-gray-800 overflow-auto py-1 border-y border-gray-200 dark:border-gray-700"
+        className="sticky shadow-md bg-white dark:bg-blue-900 overflow-auto py-1 border-y border-gray-200 dark:border-gray-700"
         style={{ top: SECONDARY_NAVBAR_HEIGHT }}
       >
         <div className="flex items-center h-6">
@@ -258,9 +258,9 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
               <ArrowCircleRightIcon className="fill-red-700" />
             )}
           </div>
-          <div style={{ width: 200 }} className="text-black dark:text-white">
+          <div style={{ width: 200 }} className="text-black dark:text-blue-100">
             {formatted_time}
-            <span className="text-gray-400 dark:text-gray-500 pl-3">{delta_time}ms</span>
+            <span className="text-gray-400 dark:text-blue-300 pl-3">{delta_time}ms</span>
           </div>
           <button
             className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
