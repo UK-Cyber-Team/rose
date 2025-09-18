@@ -173,7 +173,7 @@ function WebFlow({ flow }: { flow: FlowData }) {
   return (
     <FlowContainer>
       <pre>{header}</pre>
-      <div className="border border-gray-200 rounded-lg">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
         <Hack
           srcDoc={http_content}
           sandbox=""
@@ -247,7 +247,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
   return (
     <div className="text-mono" id={id}>
       <div
-        className="sticky shadow-md bg-white overflow-auto py-1 border-y"
+        className="sticky shadow-md bg-white dark:bg-gray-800 overflow-auto py-1 border-y border-gray-200 dark:border-gray-700"
         style={{ top: SECONDARY_NAVBAR_HEIGHT }}
       >
         <div className="flex items-center h-6">
@@ -330,15 +330,15 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
             options={displayOptions}
             value={displayOption}
             onChange={setDisplayOption}
-            className="flex gap-2 text-gray-800 text-sm mr-4 ml-auto"
+            className="flex gap-2 text-gray-800 dark:text-gray-200 text-sm mr-4 ml-auto"
           />
         </div>
       </div>
       <div
         className={
           flow.from === "s"
-            ? "border-l-8 border-green-300"
-            : "border-l-8 border-red-300"
+            ? "border-l-8 border-green-300 dark:border-green-500"
+            : "border-l-8 border-red-300 dark:border-red-500"
         }
       >
         {displayOption === "Hex" && <HexFlow flow={flow}></HexFlow>}
@@ -601,7 +601,7 @@ export function FlowView() {
   return (
     <div>
       <div
-        className="sticky shadow-md top-0 bg-white overflow-auto border-b border-b-gray-200 flex"
+        className="sticky shadow-md top-0 bg-white dark:bg-gray-800 overflow-auto border-b border-b-gray-200 dark:border-b-gray-700 flex"
         style={{ height: SECONDARY_NAVBAR_HEIGHT, zIndex: 100 }}
       >
         {(flow?.child_id != null || flow?.parent_id != null) ? (

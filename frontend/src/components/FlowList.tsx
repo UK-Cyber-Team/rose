@@ -187,10 +187,10 @@ export function FlowList() {
       <div className="bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex" style={{ height: 50 }}>
           <button
-            className="flex gap-1 items-center text-sm"
+            className="flex gap-1 items-center text-sm text-gray-900 dark:text-gray-100"
             onClick={() => setShowFilters(!showFilters)}
           >
-            {<FilterIcon height={20} className="text-gray-400"></FilterIcon>}
+            {<FilterIcon height={20} className="text-gray-400 dark:text-gray-300"></FilterIcon>}
             {showFilters ? "Close" : "Open"} filters
           </button>
           {/* Maybe we want to use a search button instead of live search */}
