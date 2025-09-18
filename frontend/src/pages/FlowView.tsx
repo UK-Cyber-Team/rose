@@ -258,9 +258,9 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
               <ArrowCircleRightIcon className="fill-red-700" />
             )}
           </div>
-          <div style={{ width: 200 }} className="text-black dark:text-blue-100">
+          <div style={{ width: 200 }} className="text-black dark:text-white">
             {formatted_time}
-            <span className="text-gray-400 dark:text-blue-300 pl-3">{delta_time}ms</span>
+            <span className="text-gray-400 dark:text-gray-500 pl-3">{delta_time}ms</span>
           </div>
           <button
             className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
@@ -641,14 +641,14 @@ export function FlowView() {
           <select
             id="repr-select"
             value={reprId}
-            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-gray-800 text-black dark:text-gray-100 px-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-blue-900 text-black dark:text-blue-100 px-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             onChange={(e) => {
               const target = e.target as HTMLSelectElement;
               const newreprid = parseInt(target.value);
               setReprId(newreprid);
             }}
           >
-            {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i} className="bg-white dark:bg-gray-800 text-black dark:text-gray-100">{e["type"]}</option>)}
+            {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i} className="bg-white dark:bg-blue-900 text-black dark:text-blue-100">{e["type"]}</option>)}
           </select>
           {reprId > 0 ? <button
             className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
