@@ -345,7 +345,9 @@ export function Header() {
         >
           Current: {currentTick}
         </div>
-        <DarkModeToggle />
+        <div className="mx-6">
+          <DarkModeToggle />
+        </div>
         <LogoutButton />
       </div>
     </>

@@ -184,7 +184,7 @@ export function FlowList() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b-gray-300 border-b shadow-md flex flex-col">
+      <div className="bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex" style={{ height: 50 }}>
           <button
             className="flex gap-1 items-center text-sm"
@@ -195,15 +195,15 @@ export function FlowList() {
           </button>
           {/* Maybe we want to use a search button instead of live search */}
           {false && (
-            <button className="ml-auto items-center bg-blue-600 text-white px-2 rounded-md text-sm">
+            <button className="ml-auto items-center bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 rounded-md text-sm">
               Search
             </button>
           )}
         </div>
         {showFilters && (
-          <div className="border-t-gray-300 border-t p-2">
+          <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
             <div className="flex">
-              <p className="text-sm font-bold text-gray-600 pb-2">
+              <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
                 Intersection filter
               </p>
               <button
@@ -309,15 +309,15 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
         <div className="flex-1 shrink">
           <div className="flex">
             <div className="shrink-0">
-              <span className="text-gray-700 font-bold overflow-ellipsis overflow-hidden ">
+              <span className="text-gray-700 dark:text-gray-200 font-bold overflow-ellipsis overflow-hidden ">
                 {flow.service_tag}
               </span>
-              <span className="text-gray-500">:{flow.dst_port}</span>
+              <span className="text-gray-500 dark:text-gray-400">:{flow.dst_port}</span>
             </div>
 
             <div className="ml-2">
-              <span className="text-gray-500">{formatted_time_h_m_s}</span>
-              <span className="text-gray-300">{formatted_time_ms}</span>
+              <span className="text-gray-500 dark:text-gray-400">{formatted_time_h_m_s}</span>
+              <span className="text-gray-300 dark:text-gray-500">{formatted_time_ms}</span>
             </div>
             <div className="text-gray-500 ml-auto">{duration}</div>
           </div>
