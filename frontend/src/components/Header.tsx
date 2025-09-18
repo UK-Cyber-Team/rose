@@ -27,6 +27,7 @@ import {
 import { useAppSelector, useAppDispatch } from "../store";
 import { logout } from "../store/auth";
 import { getTickStuff } from "../tick";
+import { DarkModeToggle } from "./DarkModeToggle";
 
 function LogoutButton() {
   const dispatch = useAppDispatch();
@@ -344,6 +345,7 @@ export function Header() {
         >
           Current: {currentTick}
         </div>
+        <DarkModeToggle />
         <LogoutButton />
       </div>
     </>
