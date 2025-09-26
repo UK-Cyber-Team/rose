@@ -2,8 +2,17 @@
 
 ## Vulnbox side
 ```
-mkdir -p /var/tmp/tcpdump/
-tcpdump -i game -nn -C 100 -W 100 -w /var/tmp/tcpdump/traffic.pcap
+#!/bin/bash
+REMOTE="root@167.172.180.161:/var/tmp/tcpdump/"
+LOCAL="/home/tooling/tulip/traffic/tcpdump/"
+KEY="/home/thisisjammy25/.ssh/id_ed25519"
+
+mkdir -p "$LOCAL"
+
+rsync -rltDv --delete \
+  --no-owner --no-group --no-perms --omit-dir-times \
+  -e "ssh -i $KEY -o StrictHostKeyChecking=no" \
+  "$REMOTE" "$LOCAL
 ```
 
 Remember that we can edit the tcpdump command to only take traffic from ports we care about to reduce noise
