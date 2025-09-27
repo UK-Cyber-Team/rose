@@ -3,7 +3,7 @@
 ## Vulnbox side
 ```
 #!/bin/bash
-REMOTE="root@167.172.180.161:/var/tmp/tcpdump/"
+REMOTE="root@159.89.28.46:/var/tmp/tcpdump/"
 LOCAL="/home/tooling/tulip/traffic/tcpdump/"
 KEY="/home/thisisjammy25/.ssh/id_ed25519"
 
@@ -12,7 +12,7 @@ mkdir -p "$LOCAL"
 rsync -rltDv --delete \
   --no-owner --no-group --no-perms --omit-dir-times \
   -e "ssh -i $KEY -o StrictHostKeyChecking=no" \
-  "$REMOTE" "$LOCAL
+  "$REMOTE" "$LOCAL"
 ```
 
 Remember that we can edit the tcpdump command to only take traffic from ports we care about to reduce noise
