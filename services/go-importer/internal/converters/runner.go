@@ -8,6 +8,9 @@ import (
 )
 
 func RunPipeline(g_db *db.Database, entry *db.FlowEntry) {
+	if g_db == nil {
+		return
+	}
 	// TODO: should we also check src port?
 	config, ok := serviceConfig[int(entry.Dst_port)]
 	if !ok {
@@ -16,7 +19,7 @@ func RunPipeline(g_db *db.Database, entry *db.FlowEntry) {
 
 	for _, converters := range config {
 		// Split flows into groups by their kinds
-		var flows map[string][]db.FlowItem
+		flows := make(map[string][]db.FlowItem)
 		for _, item := range entry.Flow {
 			_, ok := flows[item.Kind]
 			if !ok {

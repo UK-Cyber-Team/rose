@@ -21,7 +21,6 @@ func IsFlagTimeValid(timeFromFlag, referenceTime time.Time, tolerance time.Durat
 	return timeFromFlag.Before(referenceTime.Add(tolerance)) && timeFromFlag.After(referenceTime.Add(-tolerance))
 }
 
-
 // Team net checking can be disabled by setting teamNet to -1.
 // Time checking can be disabled by setting timeTolerance to zero.
 type FaustFlagValidator struct {
@@ -79,10 +78,10 @@ func (validator *EnowarsFlagValidator) IsValid(flag string, refTime time.Time) b
 		return false
 	}
 
-	serviceId := int(binary.LittleEndian.Uint32(data[0:4])) // = Service
+	serviceId := int(binary.LittleEndian.Uint32(data[0:4]))   // = Service
 	roundOffset := int(binary.LittleEndian.Uint32(data[4:8])) // Flag store
-	ownerId := int(binary.LittleEndian.Uint32(data[8:12])) // = Team
-	roundId := binary.LittleEndian.Uint32(data[12:16]) // = Tick
+	ownerId := int(binary.LittleEndian.Uint32(data[8:12]))    // = Team
+	roundId := binary.LittleEndian.Uint32(data[12:16])        // = Tick
 
 	return (validator.teamId == -1 || validator.teamId == ownerId) &&
 		serviceId <= validator.serviceCount &&
@@ -90,7 +89,7 @@ func (validator *EnowarsFlagValidator) IsValid(flag string, refTime time.Time) b
 		(validator.startTime.IsZero() ||
 			validator.tickLength <= 0 ||
 			validator.timeTolerance == 0 ||
-			IsFlagTimeValid(validator.startTime.Add(time.Duration(roundId) * validator.tickLength), refTime, validator.timeTolerance))
+			IsFlagTimeValid(validator.startTime.Add(time.Duration(roundId)*validator.tickLength), refTime, validator.timeTolerance))
 }
 
 // Team ID checking can be disabled by setting teamId to -1.
@@ -125,5 +124,5 @@ func (validator *ItallyADFlagValidator) IsValid(flag string, refTime time.Time) 
 		(validator.startTime.IsZero() ||
 			validator.tickLength <= 0 ||
 			validator.timeTolerance == 0 ||
-			IsFlagTimeValid(validator.startTime.Add(time.Duration(round) * validator.tickLength), refTime, validator.timeTolerance))
+			IsFlagTimeValid(validator.startTime.Add(time.Duration(round)*validator.tickLength), refTime, validator.timeTolerance))
 }

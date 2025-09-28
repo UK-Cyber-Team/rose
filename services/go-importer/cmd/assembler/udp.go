@@ -3,8 +3,8 @@ package main
 import (
 	"go-importer/internal/pkg/db"
 
-	"time"
 	"net/netip"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -110,13 +110,10 @@ func (stream *UdpStream) ProcessSegment(flow gopacket.Flow, udp *layers.UDP, cap
 	stream.PacketSize += uint(len(udp.Payload))
 
 	// We have to make sure to stay under the document limit
-	available := uint(*maxFlowItemSize * 1024 * 1024) - stream.PacketSize
+	available := uint(*maxFlowItemSize*1024*1024) - stream.PacketSize
 	length := uint(len(udp.Payload))
 	if length > available {
 		length = available
-	}
-	if length < 0 {
-		length = 0
 	}
 
 	stream.Items = append(stream.Items, db.FlowItem{
