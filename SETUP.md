@@ -2,18 +2,11 @@
 
 ## Vulnbox side
 ```
-#!/bin/bash
-REMOTE="root@159.89.28.46:/var/tmp/tcpdump/"
-LOCAL="/home/tooling/tulip/traffic/tcpdump/"
-KEY="/home/thisisjammy25/.ssh/id_ed25519"
-
-mkdir -p "$LOCAL"
-
-rsync -rltDv --delete \
-  --no-owner --no-group --no-perms --omit-dir-times \
-  -e "ssh -i $KEY -o StrictHostKeyChecking=no" \
-  "$REMOTE" "$LOCAL"
+mkdir -p /var/tmp/tcpdump/
+tcpdump -i game -nn -C 100 -W 100 -w /var/tmp/tcpdump/traffic.pcap
 ```
+
+
 
 Remember that we can edit the tcpdump command to only take traffic from ports we care about to reduce noise
 
@@ -46,23 +39,16 @@ helper = '''
 ### Save the below script on the infra box:
 ```bash
 #!/bin/bash
-# Sync pcap files from remote server to infra server using rsync and sshpass
-# Change IP address and password as needed
-# Ensure that this is added to crontab for periodic sync
-# Change the paths as needed
-
-# Remote and local paths
-REMOTE="root@[IP_ADDRESS]:/var/tmp/tcpdump/"
+REMOTE="root@159.89.28.46:/var/tmp/tcpdump/"
 LOCAL="/home/tooling/tulip/traffic/tcpdump/"
+KEY="/home/thisisjammy25/.ssh/id_ed25519"
 
-# Password for SSH
-PASSWORD="[PASSWORD]"
+mkdir -p "$LOCAL"
 
-# Install sshpass and rsync if not present
-sudo apt-get install -y sshpass rsync
-
-# Run rsync with sshpass
-sshpass -p "$PASSWORD" rsync -rlpgoDvc --delete "$REMOTE" "$LOCAL"
+rsync -rltDv --delete \
+  --no-owner --no-group --no-perms --omit-dir-times \
+  -e "ssh -i $KEY -o StrictHostKeyChecking=no" \
+  "$REMOTE" "$LOCAL"
 ```
 
 Remember to make it executable with `chmod +x [script]`
