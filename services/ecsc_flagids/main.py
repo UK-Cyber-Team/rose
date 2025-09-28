@@ -20,7 +20,7 @@ class Settings(pydantic_settings.BaseSettings):
     # leave empty to disable cache
     cache_path: pathlib.Path | None = pydantic.Field(default=pathlib.Path("/data/cache.json"))
     scoreboard_attackinfo_url: pydantic.HttpUrl = pydantic.Field(default=pydantic.HttpUrl("http://10.42.251.2:8080/api/v1/attack_info"))
-    # ensure we dont try to add 
+    # ensure we don't try to add flagids to the database if they already exist
     fetch_all_flagids_from_database_on_start: bool = True
     game_starttime: datetime.datetime
     game_round_duration: int # ms
@@ -165,9 +165,9 @@ def ingest_flagids(roundflagids: typing.List[RoundFlagIdInfo], cache: Cache, db:
             print(f"Round {round} already in cache?")
         cache.successfully_fetched_rounds.add(round)
     new_flagids = [f for f in flagids if f not in cache.all_flagids]
-    print(f"Ingesting {len(round_flagids)} rounds, composed of {len(flagids)} flagids ({len(new_flagids)} new to insert)")
+    print(f"Ingesting {len(roundflagids)} rounds, composed of {len(flagids)} flagids ({len(new_flagids)} new to insert)")
     if len(new_flagids) > 0:
-        # add_flagids_to_database(db, new_flagids)
+        add_flagids_to_database(db, new_flagids)
         cache.all_flagids.update(new_flagids)
     
 
