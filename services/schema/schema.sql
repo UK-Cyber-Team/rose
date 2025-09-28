@@ -62,7 +62,8 @@ CREATE TABLE flow (
 	packets_count int NOT NULL DEFAULT 0,
 	packets_size int NOT NULL DEFAULT 0,
 	flags_in int NOT NULL DEFAULT 0,
-	flags_out int NOT NULL DEFAULT 0
+	flags_out int NOT NULL DEFAULT 0,
+	fuzzy_hash text NOT NULL
 );
 
 -- Suricata id lookup, see Database::SuricataIdFindFlow

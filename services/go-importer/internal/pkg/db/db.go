@@ -65,6 +65,7 @@ func NewDatabase(connectionString string) *Database {
 			"id", "port_src", "port_dst", "ip_src", "ip_dst", "duration", "tags",
 			"flags", "flagids", "pcap_id", "link_child_id", "link_parent_id",
 			"fingerprints", "packets_count", "packets_size", "flags_in", "flags_out",
+			"fuzzy_hash",
 		},
 	})
 	database.batcherFlowItem = NewCopyBatcher(CopyBatcherConfig{
@@ -399,6 +400,7 @@ func (db *Database) FlowInsert(flow FlowEntry) {
 			flow.Size,
 			flow.Flags_In,
 			flow.Flags_Out,
+			flow.Fuzzy_hash,
 		}, func(err error) {
 			if err != nil {
 				log.Println("Error inserting flow: ", err)
