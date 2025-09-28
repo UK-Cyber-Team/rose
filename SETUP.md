@@ -3,7 +3,7 @@
 ## Vulnbox side
 ```
 mkdir -p /var/tmp/tcpdump/
-tcpdump -i game -nn -C 100 -W 100 -w /var/tmp/tcpdump/traffic.pcap
+tcpdump -i vulnbox -nn -C 100 -W 100 ! port 22 -w /var/tmp/tcpdump/traffic.pcap
 ```
 
 
