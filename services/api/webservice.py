@@ -190,18 +190,18 @@ def query():
     results = list(map(dataclasses.asdict, flows))
 
     similarity = int(param.get("similarity", 90))
-    if len(param["includeFuzzyHashes"]) > 0:
+    if len(param.get("includeFuzzyHashes", [])) > 0:
         results = [x for x in results if all(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) >= similarity for hash in param["includeFuzzyHashes"])]
         for x in results:
             x["similarity"] = ((sum(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) for hash in param["includeFuzzyHashes"]) / len(param["includeFuzzyHashes"])) + 128) / 256
 
-    if len(param["excludeFuzzyHashes"]) > 0:
+    if len(param.get("excludeFuzzyHashes", [])) > 0:
         results = [x for x in results if all(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) < similarity for hash in param["excludeFuzzyHashes"])]
         for x in results:
             similarity = ((-sum(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) for hash in param["excludeFuzzyHashes"]) / len(param["excludeFuzzyHashes"]))+128)/256
             x["similarity"] = (similarity + x["similarity"])/2 if "similarity" in x else similarity
 
-    return return_json_response(flows)
+    return return_json_response(results)
 
 
 @application.route("/stats")
