@@ -53,6 +53,8 @@ from flask import request
 from flow2pwn import flow2pwn
 import database, json_util
 
+import nilsimsa
+
 application = Flask(__name__)
 application.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 application.config['SESSION_TYPE'] = 'filesystem'
@@ -150,30 +152,30 @@ def getTickInfo():
 @application.route("/query", methods=["POST"])
 @requires_auth
 def query():
-    query = request.get_json()
+    param = request.get_json()
 
     try:
         query = database.FlowQuery(
             regex_insensitive=(
-                re.compile(query["regex_insensitive"])
-                if "regex_insensitive" in query
+                re.compile(param["regex_insensitive"])
+                if "regex_insensitive" in param
                 else None
             ),
-            ip_src=ip_network(query["ip_src"]) if "ip_src" in query else None,
-            ip_dst=ip_network(query["ip_dst"]) if "ip_dst" in query else None,
-            port_src=query.get("port_src"),
-            port_dst=query.get("port_dst"),
+            ip_src=ip_network(param["ip_src"]) if "ip_src" in param else None,
+            ip_dst=ip_network(param["ip_dst"]) if "ip_dst" in param else None,
+            port_src=param.get("port_src"),
+            port_dst=param.get("port_dst"),
             time_from=(
-                dateutil.parser.parse(query["time_from"])
-                if "time_from" in query
+                dateutil.parser.parse(param["time_from"])
+                if "time_from" in param
                 else None
             ),
             time_to=(
-                dateutil.parser.parse(query["time_to"]) if "time_to" in query else None
+                dateutil.parser.parse(param["time_to"]) if "time_to" in param else None
             ),
-            tags_include=[str(elem) for elem in query.get("tags_include", [])],
-            tags_exclude=[str(elem) for elem in query.get("tags_exclude", [])],
-            tag_intersection_and=query.get("tag_intersection_mode", "").lower() == "and",
+            tags_include=[str(elem) for elem in param.get("tags_include", [])],
+            tags_exclude=[str(elem) for elem in param.get("tags_exclude", [])],
+            tag_intersection_and=param.get("tag_intersection_mode", "").lower() == "and",
         )
     except re.error as error:
         return return_json_response(
@@ -185,7 +187,20 @@ def query():
 
     with db.connection() as c:
         flows = c.flow_query(query)
-    flows = list(map(dataclasses.asdict, flows))
+    results = list(map(dataclasses.asdict, flows))
+
+    similarity = int(param.get("similarity", 90))
+    if len(param["includeFuzzyHashes"]) > 0:
+        results = [x for x in results if all(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) >= similarity for hash in param["includeFuzzyHashes"])]
+        for x in results:
+            x["similarity"] = ((sum(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) for hash in param["includeFuzzyHashes"]) / len(param["includeFuzzyHashes"])) + 128) / 256
+
+    if len(param["excludeFuzzyHashes"]) > 0:
+        results = [x for x in results if all(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) < similarity for hash in param["excludeFuzzyHashes"])]
+        for x in results:
+            similarity = ((-sum(nilsimsa.compare_digests(hash, x["fuzzy_hash"]) for hash in param["excludeFuzzyHashes"]) / len(param["excludeFuzzyHashes"]))+128)/256
+            x["similarity"] = (similarity + x["similarity"])/2 if "similarity" in x else similarity
+
     return return_json_response(flows)
 
 

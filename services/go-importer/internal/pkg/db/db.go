@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math"
 	"net/netip"
 	"runtime"
 	"sync"
 	"time"
-	"math"
 
 	"github.com/gammazero/workerpool"
 	"github.com/gofrs/uuid/v5"
@@ -20,16 +20,16 @@ import (
 )
 
 type Database struct {
-	pool *pgxpool.Pool
-	workerPool *workerpool.WorkerPool
-	batcherFlowEntry *CopyBatcher
-	batcherFlowItem *CopyBatcher
-	batcherFlowIndex *CopyBatcher
-	knownTags map[string]struct{}
-	knownTagsMutex *sync.RWMutex
-	fingerprints [][]int32
+	pool              *pgxpool.Pool
+	workerPool        *workerpool.WorkerPool
+	batcherFlowEntry  *CopyBatcher
+	batcherFlowItem   *CopyBatcher
+	batcherFlowIndex  *CopyBatcher
+	knownTags         map[string]struct{}
+	knownTagsMutex    *sync.RWMutex
+	fingerprints      [][]int32
 	fingerprintsMutex *sync.Mutex
-	suricataIdWindow time.Duration
+	suricataIdWindow  time.Duration
 }
 
 func NewDatabase(connectionString string) *Database {
@@ -38,7 +38,7 @@ func NewDatabase(connectionString string) *Database {
 		log.Fatalln("Unable to parse database config: ", err)
 	}
 
-	database := &Database {}
+	database := &Database{}
 	poolConfig.AfterConnect = database.AfterConnect
 
 	// Database connection pool
@@ -58,25 +58,25 @@ func NewDatabase(connectionString string) *Database {
 	}
 
 	database.workerPool = workerpool.New(runtime.NumCPU() / 2)
-	database.batcherFlowEntry = NewCopyBatcher(CopyBatcherConfig {
-		db: database,
+	database.batcherFlowEntry = NewCopyBatcher(CopyBatcherConfig{
+		db:        database,
 		tableName: pgx.Identifier{"flow"},
-		columns: []string {
+		columns: []string{
 			"id", "port_src", "port_dst", "ip_src", "ip_dst", "duration", "tags",
 			"flags", "flagids", "pcap_id", "link_child_id", "link_parent_id",
 			"fingerprints", "packets_count", "packets_size", "flags_in", "flags_out",
 		},
 	})
-	database.batcherFlowItem = NewCopyBatcher(CopyBatcherConfig {
-		db: database,
+	database.batcherFlowItem = NewCopyBatcher(CopyBatcherConfig{
+		db:        database,
 		tableName: pgx.Identifier{"flow_item"},
-		columns: []string{"id", "flow_id", "kind", "direction", "data"},
+		columns:   []string{"id", "flow_id", "kind", "direction", "data"},
 		batchSize: 2000,
 	})
-	database.batcherFlowIndex = NewCopyBatcher(CopyBatcherConfig {
-		db: database,
+	database.batcherFlowIndex = NewCopyBatcher(CopyBatcherConfig{
+		db:        database,
 		tableName: pgx.Identifier{"flow_index"},
-		columns: []string{"flow_id", "text"},
+		columns:   []string{"flow_id", "text"},
 		batchSize: 4000,
 	})
 
@@ -116,8 +116,8 @@ func (db *Database) AfterConnect(ctx context.Context, conn *pgx.Conn) error {
 
 // Pcap files
 type Pcap struct {
-	Id uuid.UUID
-	Name string
+	Id       uuid.UUID
+	Name     string
 	Position int64
 }
 
@@ -132,7 +132,7 @@ func (db *Database) PcapFindOrInsert(name string) Pcap {
 		INSERT INTO pcap (id, name)
 		VALUES (uuid_generate_v4(), @name)
 		ON CONFLICT (name) DO NOTHING
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"name": name,
 	})
 
@@ -147,7 +147,7 @@ func (db *Database) PcapFindOrInsert(name string) Pcap {
 		SELECT *
 		FROM pcap
 		WHERE name = @name
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"name": name,
 	})
 	defer rows.Close()
@@ -166,8 +166,8 @@ func (db *Database) PcapSetPosition(id uuid.UUID, position int64) error {
 		UPDATE pcap
 		SET position = @position
 		WHERE id = @id
-	`, pgx.NamedArgs {
-		"id": id,
+	`, pgx.NamedArgs{
+		"id":       id,
 		"position": position,
 	})
 
@@ -199,7 +199,7 @@ func (db *Database) KnownTagsUpdate() {
 			INSERT INTO tag (name)
 			SELECT jsonb_array_elements_text(@tags::jsonb - array_agg(name)) FROM tag
 			ON CONFLICT (name) DO NOTHING
-		`, pgx.NamedArgs {
+		`, pgx.NamedArgs{
 			"tags": knownTags,
 		})
 
@@ -247,31 +247,32 @@ func (db *Database) KnownTagsUpsert(tag string) {
 // Flows
 type FlowEntry struct {
 	Id           uuid.UUID
-	Src_port     uint16 `db:"port_src"`
-	Dst_port     uint16 `db:"port_dst"`
+	Src_port     uint16     `db:"port_src"`
+	Dst_port     uint16     `db:"port_dst"`
 	Src_ip       netip.Addr `db:"ip_src"`
 	Dst_ip       netip.Addr `db:"ip_dst"`
 	Time         time.Time
 	Duration     time.Duration
-	Filename     string `db:"-"`
-	PcapId       uuid.UUID `db:"pcap_id"`
+	Filename     string     `db:"-"`
+	PcapId       uuid.UUID  `db:"pcap_id"`
 	Parent_id    *uuid.UUID `db:"link_parent_id"`
 	Child_id     *uuid.UUID `db:"link_child_id"`
 	Fingerprints []uint32
 	Flow         []FlowItem `db:"-"`
-	Tags         []string `db:"tags"`
-	Flags        []string `db:"flags"`
-	Flagids      []string `db:"flagids"`
-	Num_packets  int `db:"packets_count"`
-	Size         int `db:"packets_size"`
-	Flags_In     int `db:"flags_in"`
-	Flags_Out    int `db:"flags_out"`
+	Tags         []string   `db:"tags"`
+	Flags        []string   `db:"flags"`
+	Flagids      []string   `db:"flagids"`
+	Fuzzy_hash   string     `db:"fuzzy_hash"`
+	Num_packets  int        `db:"packets_count"`
+	Size         int        `db:"packets_size"`
+	Flags_In     int        `db:"flags_in"`
+	Flags_Out    int        `db:"flags_out"`
 }
 
 type FlowItem struct {
-	Id uuid.UUID
+	Id     uuid.UUID
 	FlowId uuid.UUID `db:"flow_id"`
-	Kind string
+	Kind   string
 	/// From: "s" / "c" for server or client
 	From string `db:"direction"`
 	/// The raw packet bytes
@@ -326,13 +327,13 @@ func (db *Database) FlowInsert(flow FlowEntry) {
 		// This is to accomodate searches hitting the boundary
 		for i := 0; i < chunkCount; i++ {
 			startIndex := i * chunkLength
-			endIndex := i * chunkLength + chunkLength + chunkOverlap
+			endIndex := i*chunkLength + chunkLength + chunkOverlap
 			if endIndex >= len(text) {
 				endIndex = len(text)
 			}
 
 			chunk := string(text[startIndex:endIndex])
-			indexes = append(indexes, []any { flow_id, chunk })
+			indexes = append(indexes, []any{flow_id, chunk})
 		}
 	}
 
@@ -349,7 +350,7 @@ func (db *Database) FlowInsert(flow FlowEntry) {
 	// Prepare flow items
 	items := make([][]any, len(flow.Flow))
 	for i := range flow.Flow {
-		items[i] = []any {
+		items[i] = []any{
 			FidCreate(flow.Flow[i].Time),
 			flow_id,
 			flow.Flow[i].Kind,
@@ -380,7 +381,7 @@ func (db *Database) FlowInsert(flow FlowEntry) {
 		db.FingerprintsPush(fingerprints)
 
 		// Now insert the flow
-		db.batcherFlowEntry.PushCallback([]any {
+		db.batcherFlowEntry.PushCallback([]any{
 			flow_id,
 			flow.Src_port, flow.Dst_port,
 			flow.Src_ip, flow.Dst_ip,
@@ -415,8 +416,8 @@ func (db *Database) FlowAddSignatures(flow_id uuid.UUID, signatures []Signature)
 			UPDATE flow
 			SET signatures = jsonb_unique(signatures || @signatures)
 			WHERE id = @flow_id
-		`, pgx.NamedArgs {
-			"flow_id": flow_id,
+		`, pgx.NamedArgs{
+			"flow_id":    flow_id,
 			"signatures": signaturesJson,
 		})
 
@@ -444,9 +445,9 @@ func (db *Database) FlowAddTags(flow_id uuid.UUID, tags []string) {
 			UPDATE flow
 			SET tags = jsonb_unique(tags || @tags)
 			WHERE id = @flow_id
-		`, pgx.NamedArgs {
+		`, pgx.NamedArgs{
 			"flow_id": flow_id,
-			"tags": tagsJson,
+			"tags":    tagsJson,
 		})
 
 		if err != nil {
@@ -480,13 +481,13 @@ func (db *Database) SuricataIdFindFlow(id SuricataId) (uuid.UUID, error) {
 			AND ip_dst = @ip_dst
 			AND id > fid_pack_low(@time_start)
 			AND id < fid_pack_high(@time_end)
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"time_start": id.Time.Add(-db.suricataIdWindow),
-		"time_end": id.Time.Add(db.suricataIdWindow),
-		"port_src": id.Src_port,
-		"port_dst": id.Dst_port,
-		"ip_src": id.Src_ip,
-		"ip_dst": id.Dst_ip,
+		"time_end":   id.Time.Add(db.suricataIdWindow),
+		"port_src":   id.Src_port,
+		"port_dst":   id.Dst_port,
+		"ip_src":     id.Src_ip,
+		"ip_dst":     id.Dst_ip,
 	}).Scan(&flow_id)
 
 	return flow_id, err
@@ -494,7 +495,7 @@ func (db *Database) SuricataIdFindFlow(id SuricataId) (uuid.UUID, error) {
 
 // Suricata signature
 type Signature struct {
-	Id      int32 `json:"id"`
+	Id      int32  `json:"id"`
 	Message string `json:"message"`
 	Action  string `json:"action"`
 }
@@ -544,7 +545,7 @@ func (db *Database) FingerprintsFlush() {
 			LEFT JOIN fingerprint AS f
 				ON f.id = ANY(ARRAY(SELECT value::int FROM jsonb_array_elements(v.value)))
 		ON CONFLICT (id) DO NOTHING
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"fingerprints": fingerprintsJson,
 	})
 
@@ -576,7 +577,7 @@ func (db *Database) FingerprintsFlush() {
 				OR (d.child IS NULL) != (link_child_id IS NULL)
 				OR (d.parent IS NULL) != (link_parent_id IS NULL)
 			)
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"fingerprints": fingerprintsUnique,
 	})
 
@@ -591,9 +592,9 @@ func (db *Database) FingerprintsFlush() {
 
 // Flag ids
 type FlagId struct {
-	Id int32
+	Id      int32
 	Content string
-	Time time.Time
+	Time    time.Time
 }
 
 // Query all valid flag ids
@@ -602,9 +603,9 @@ func (db *Database) FlagIdsQuery(lifetime int) ([]FlagId, error) {
 		SELECT *
 		FROM flag_id
 		WHERE time > @time_limit
-	`, pgx.NamedArgs {
+	`, pgx.NamedArgs{
 		"time_limit": time.Now().Add(-time.Duration(float64(lifetime) * float64(time.Second))),
-	});
+	})
 	defer rows.Close()
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[FlagId])

@@ -14,9 +14,10 @@ import {
   START_FILTER_KEY,
   END_FILTER_KEY,
   FLOW_LIST_REFETCH_INTERVAL_MS,
+  SIMILARITY_FILTER_KEY,
 } from "../const";
 import { useAppSelector, useAppDispatch } from "../store";
-import { toggleFilterTag, toggleTagIntersectMode } from "../store/filter";
+import { toggleFilterFuzzyHashes, toggleFilterTag, toggleTagIntersectMode } from "../store/filter";
 
 import { HeartIcon, FilterIcon, LinkIcon } from "@heroicons/react/solid";
 import { HeartIcon as EmptyHeartIcon } from "@heroicons/react/outline";
@@ -49,6 +50,10 @@ export function FlowList() {
   const includeTags = useAppSelector((state) => state.filter.includeTags);
   const excludeTags = useAppSelector((state) => state.filter.excludeTags);
   const tagIntersectionMode = useAppSelector((state) => state.filter.tagIntersectionMode);
+  const includeFuzzyHashes = useAppSelector((state)=> state.filter.includeFuzzyHashes);
+  const excludeFuzzyHashes = useAppSelector((state)=> state.filter.excludeFuzzyHashes);
+  const fuzzyHashes = useAppSelector((state)=> state.filter.fuzzyHashes);
+  const fuzzyHashIds = useAppSelector((state)=> state.filter.fuzzyHashIds);
 
   const dispatch = useAppDispatch();
 
@@ -64,6 +69,7 @@ export function FlowList() {
   const text_filter = searchParams.get(TEXT_FILTER_KEY) ?? undefined;
   const from_filter = searchParams.get(START_FILTER_KEY) ?? undefined;
   const to_filter = searchParams.get(END_FILTER_KEY) ?? undefined;
+  const similarity = searchParams.get(SIMILARITY_FILTER_KEY) ?? undefined;
 
   const debounced_text_filter = useDebounce(text_filter, 300);
 
@@ -81,6 +87,9 @@ export function FlowList() {
       tags_include: includeTags,
       tags_exclude: excludeTags,
       tag_intersection_mode: tagIntersectionMode,
+      similarity: parseInt(similarity ?? "90"),
+      includeFuzzyHashes: includeFuzzyHashes,
+      excludeFuzzyHashes: excludeFuzzyHashes,
       flags: filterFlags,
       flagids: filterFlagids,
     },
@@ -201,30 +210,50 @@ export function FlowList() {
           )}
         </div>
         {showFilters && (
-          <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
-            <div className="flex">
-              <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
-                Intersection filter
-              </p>
-              <button
-                className="w-24 h-5 bg-blue-100 text-sm rounded-md ml-auto"
-                onClick={() => dispatch(toggleTagIntersectMode())}
-              >
-                Mode:&nbsp;{tagIntersectionMode}
-              </button>
+          <div>
+            <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
+              <div className="flex">
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
+                  Intersection filter
+                </p>
+                <button
+                  className="w-24 h-5 bg-blue-100 text-sm rounded-md ml-auto"
+                  onClick={() => dispatch(toggleTagIntersectMode())}
+                >
+                  Mode:&nbsp;{tagIntersectionMode}
+                </button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {(availableTags ?? []).map((tag) => (
+                  <Tag
+                    key={tag}
+                    tag={tag}
+                    disabled={!includeTags.includes(tag)}
+                    excluded={excludeTags.includes(tag)}
+                    onClick={() => dispatch(toggleFilterTag(tag))}
+                  ></Tag>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {(availableTags ?? []).map((tag) => (
-                <Tag
-                  key={tag}
-                  tag={tag}
-                  disabled={!includeTags.includes(tag)}
-                  excluded={excludeTags.includes(tag)}
-                  onClick={() => dispatch(toggleFilterTag(tag))}
-                ></Tag>
-              ))}
+            <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
+              <div className="flex">
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
+                  Similarity filter
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {(fuzzyHashes ?? []).map((fuzzyHash, i) => (
+                    <Tag
+                      key={fuzzyHashIds[i]}
+                      tag={fuzzyHashIds[i]}
+                      disabled={!includeFuzzyHashes.includes(fuzzyHash)}
+                      excluded={excludeFuzzyHashes.includes(fuzzyHash)}
+                      onClick={() => dispatch(toggleFilterFuzzyHashes([fuzzyHash, fuzzyHashIds[i]]))}
+                    ></Tag>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+	  </div>
         )}
       </div>
       <div></div>
