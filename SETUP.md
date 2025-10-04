@@ -60,3 +60,6 @@ Add the script to crontab with `crontab -e` copying the below line:
 
 ## Start 
 `sudo docker compose up --build -d`
+
+## Clear all data
+`sudo docker compose down -v --remove-orphans`
