@@ -20,6 +20,7 @@ class Settings(pydantic_settings.BaseSettings):
     # leave empty to disable cache
     cache_path: pathlib.Path | None = pydantic.Field(default=pathlib.Path("/data/cache.json"))
     scoreboard_attackinfo_url: pydantic.HttpUrl = pydantic.Field(default=pydantic.HttpUrl("http://10.42.251.2:8080/api/v1/attack_info"))
+    scoreboard_currentround_url: pydantic.HttpUrl = pydantic.Field(default=pydantic.HttpUrl("http://10.42.251.2:8080/api/v1/current_round"))
     # ensure we don't try to add flagids to the database if they already exist
     fetch_all_flagids_from_database_on_start: bool = True
     game_starttime: datetime.datetime
@@ -118,9 +119,13 @@ def fetch_flagids(base_url: pydantic.HttpUrl, teamid: int, round: int | None = N
 
 
 def add_flagids_to_database(db: psycopg_pool.ConnectionPool, flags: typing.List[str]):
+    values: typing.List[typing.Tuple[str]] = [(f,) for f in flags]
+    if len(values) == 0:
+        return
+    
     with db.connection() as conn:
         with conn.cursor() as cur:
-            cur.executemany("INSERT INTO flag_id (content) VALUES (%s)", flags)
+            cur.executemany("INSERT INTO flag_id (content) VALUES (%s)", values)
             conn.commit()
 
 def get_current_flagids_from_database(db: psycopg_pool.ConnectionPool) -> typing.Set[str]:
@@ -171,6 +176,53 @@ def ingest_flagids(roundflagids: typing.List[RoundFlagIdInfo], cache: Cache, db:
         cache.all_flagids.update(new_flagids)
     
 
+def get_current_round(url: pydantic.HttpUrl) -> typing.Tuple[int, datetime.datetime]:
+    url_str = str(url)
+    with httpx.Client() as client:
+        response = client.get(url_str, timeout=settings.game_round_duration * 2 / 1000)
+        response.raise_for_status()
+        round_data = response.json()
+    
+        if not isinstance(round_data, dict):
+            raise ValueError(f"Invalid response, expected dict, got {type(round_data)}")
+        if "round" not in round_data or "time" not in round_data:
+            raise ValueError(f"Invalid response, missing 'round' or 'time' keys")
+        round = round_data["round"]
+        time_str = round_data["time"]
+        if not isinstance(round, int):
+            raise ValueError(f"Invalid response, expected 'round' to be int, got {type(round)}")
+        if not isinstance(time_str, str):
+            raise ValueError(f"Invalid response, expected 'time' to be str, got {type(time_str)}")
+        try:
+            round_start_time = datetime.datetime.fromisoformat(time_str)
+        except Exception as e:
+            raise ValueError(f"Invalid response, failed to parse 'time' as ISO format: {time_str}") from e
+
+        # force timestamp to be a utc timezone
+        if round_start_time.tzinfo is None:
+            round_start_time = round_start_time.replace(tzinfo=datetime.timezone.utc)
+    
+    return round, round_start_time
+
+
+def wait_until_next_round(current_round_url: pydantic.HttpUrl, round_we_knew: int, round_duration_ms: int):
+    this_round, round_start_time = get_current_round(current_round_url)
+    if this_round > round_we_knew:
+        print(f"Round has advanced from {round_we_knew} to {this_round}, not waiting")
+        return
+    round_end_time = round_start_time + datetime.timedelta(milliseconds=settings.game_round_duration)
+    now = datetime.datetime.now(tz=round_start_time.tzinfo)
+    if now >= round_end_time:
+        print(f"Round {this_round} should have ended at {round_end_time.isoformat()}, but scoreboard still shows it, not waiting")
+        return this_round
+    wait_seconds = (round_end_time - now).total_seconds()
+    print(f"Waiting {wait_seconds} seconds until round {this_round} ends at {round_end_time.isoformat()}")
+    time.sleep(wait_seconds + 1)
+    return
+
+
+
+
 if __name__ == "__main__":
     settings = Settings()
     print("Settings:", settings)
@@ -218,6 +270,7 @@ if __name__ == "__main__":
             continue
         
         latest_round = max(r.round_id for r in current_rounds)
+
         print(f"Latest round is {latest_round}")
         
         ingest_flagids(current_rounds, cache, db=db)
@@ -226,11 +279,13 @@ if __name__ == "__main__":
         print(f"{len(missing_rounds)} missing rounds to backfill: {missing_rounds}")
         
         for round in missing_rounds[:40]: # limit fetching to 40 rounds at a time (so latest flagids are always fetched quickly)
+            start_time = time.time()
             print(f"Fetching missing round {round}")
             round_flagids = fetch_flagids(settings.scoreboard_attackinfo_url, settings.teamid, round=round)
-
+            end_time = time.time()
+            print(f"Fetched round {round} in {end_time - start_time:.2f} seconds")
             if len(round_flagids) == 0:
-                # print(f"Round {round} has no flagids (service down?), skipping")
+                print(f"Round {round} has no flagids (service down?), skipping")
                 continue
             
             ingest_flagids(round_flagids, cache, db=db)
@@ -239,11 +294,13 @@ if __name__ == "__main__":
             time.sleep(1)
         save_cache(settings.cache_path, cache)
 
-        # sleep until next round
-        next_round_time = round_to_time(settings.game_starttime, settings.game_round_duration, latest_round + 1)
-        now = datetime.datetime.now(tz=settings.game_starttime.tzinfo)
-        if next_round_time > now:
-            wait_seconds = (next_round_time - now).total_seconds()
-            print(f"Waiting {wait_seconds} seconds until next round {latest_round + 1} at {next_round_time.isoformat()}")
-            time.sleep(wait_seconds)
+
+        wait_until_next_round(settings.scoreboard_currentround_url, latest_round, settings.game_round_duration)
+        # # sleep until next round
+        # next_round_time = round_to_time(settings.game_starttime, settings.game_round_duration, latest_round + 1)
+        # now = datetime.datetime.now(tz=settings.game_starttime.tzinfo)
+        # if next_round_time > now:
+        #     wait_seconds = (next_round_time - now).total_seconds()
+        #     print(f"Waiting {wait_seconds} seconds until next round {latest_round + 1} at {next_round_time.isoformat()}")
+        #     time.sleep(wait_seconds)
 

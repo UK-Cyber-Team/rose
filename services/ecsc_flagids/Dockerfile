@@ -10,6 +10,8 @@ RUN pip install -r ./requirements.txt
 
 COPY ./main.py /app/
 
+ENV PYTHONUNBUFFERED=1
+
 STOPSIGNAL SIGINT
 
 CMD ["python3", "./main.py"]

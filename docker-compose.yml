@@ -93,6 +93,7 @@ services:
       enabled: ${ECSC_FLAGIDS_SCRAPE}
       db: ${TIMESCALE}
       scoreboard_attackinfo_url: ${FLAGID_ENDPOINT}
+      scoreboard_currentround_url: ${ECSC_CURRENTRROUND_URL}
       teamid: ${TEAM_ID}
       fetch_all_flagids_from_database_on_start: ${ECSC_FLAGIDS_FETCH_ALL_FLAGIDS_FROM_DATABASE_ON_START}
       cache_path: /data/cache.json
