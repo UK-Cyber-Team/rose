@@ -4,3 +4,4 @@ Flask-Session
 requests
 python-dateutil
 psycopg[binary,pool]
+nilsimsa

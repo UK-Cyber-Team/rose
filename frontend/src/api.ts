@@ -73,6 +73,8 @@ export const tulipApi = createApi({
           suricata: [],
           signatures: flow.signatures,
           flow: Object.values(representations),
+          fuzzy_hash: flow.fuzzy_hash,
+	  similarity: flow.similarity,
         };
       },
     }),
@@ -104,6 +106,8 @@ export const tulipApi = createApi({
           filename: flow.pcap_name,
           service_tag: "",
           suricata: [],
+          fuzzy_hash: flow.fuzzy_hash,
+          similarity: flow.similarity,
         }));
       },
     }),

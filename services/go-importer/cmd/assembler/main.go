@@ -5,6 +5,8 @@ import (
 	"go-importer/internal/pkg/db"
 	"runtime"
 
+	"github.com/chikamim/nilsimsa"
+
 	"github.com/gammazero/workerpool"
 
 	"flag"
@@ -125,6 +127,14 @@ func reassemblyCallback(entry db.FlowEntry) {
 			}
 			ApplyFlagids(&entry, flagids)
 		}
+
+		allData := make([]byte, 0)
+		for idx := 0; idx < len(entry.Flow); idx++ {
+			flowItem := entry.Flow[idx]
+			allData = append(allData[:], []byte(flowItem.Data)[:]...)
+		}
+		fuzzyHash := nilsimsa.HexSum(allData)
+		entry.Fuzzy_hash = fuzzyHash
 
 		// Finally, insert the new entry
 		g_db.FlowInsert(entry)
