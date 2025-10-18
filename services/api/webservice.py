@@ -281,7 +281,7 @@ def getFlowDetail(id):
 @requires_auth
 def getFlowPcap(id):
     """Generate and download a PCAP file for a specific flow"""
-    import io
+    import tempfile
     from scapy.all import Ether, IP, IPv6, TCP, UDP, wrpcap
     from scapy.packet import Raw
     
@@ -346,20 +346,31 @@ def getFlowPcap(id):
         if not packets:
             return return_json_response({"error": "Failed to generate any packets"}, status=500)
         
-        # Write packets to in-memory file
-        pcap_buffer = io.BytesIO()
-        wrpcap(pcap_buffer, packets)
-        pcap_buffer.seek(0)
+        # Write packets to temporary file
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.pcap', delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            wrpcap(tmp_path, packets)
         
         # Generate filename
         filename = f"tulip_flow_{flow_id}.pcap"
         
-        return send_file(
-            pcap_buffer,
+        # Send file and clean up
+        response = send_file(
+            tmp_path,
             mimetype="application/vnd.tcpdump.pcap",
             as_attachment=True,
             download_name=filename
         )
+        
+        # Schedule file deletion after sending
+        @response.call_on_close
+        def cleanup():
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+        
+        return response
         
     except Exception as e:
         traceback.print_exc()
@@ -367,7 +378,6 @@ def getFlowPcap(id):
             {"error": f"Failed to generate PCAP: {str(e)}"},
             status=500
         )
-
 
 @application.route("/to_single_python_request", methods=["POST"])
 @requires_auth
