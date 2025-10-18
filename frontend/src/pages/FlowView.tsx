@@ -687,6 +687,17 @@ export function FlowView() {
           >
             {requestsCopyStatusText}
           </button>
+
+          <button
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 text-sm rounded-md"
+            onClick={() => {
+              const url = `${API_BASE_PATH}/flow/${id}/pcap`;
+              window.location.href = url;
+            }}
+            title="Download this flow as a PCAP file"
+          >
+            <DownloadIcon className="inline-flex items-baseline w-5 h-5" /> PCAP
+          </button>
         </div>
       </div>
 
