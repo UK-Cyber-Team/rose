@@ -277,6 +277,108 @@ def getFlowDetail(id):
     return return_json_response(flow)
 
 
+@application.route("/flow/<id>/pcap")
+@requires_auth
+def getFlowPcap(id):
+    """Generate and download a PCAP file for a specific flow"""
+    import tempfile
+    from scapy.all import Ether, IP, IPv6, TCP, UDP, wrpcap
+    from scapy.packet import Raw
+    
+    flow_id = uuid.UUID(id)
+    
+    try:
+        with db.connection() as c:
+            flow = c.flow_detail(flow_id)
+        
+        if not flow:
+            return return_json_response({"error": "Flow not found"}, status=404)
+        
+        packets = []
+        
+        # Get raw flow items (actual packet data)
+        raw_items = flow.kind_items("raw")
+        
+        if not raw_items:
+            return return_json_response({"error": "No packet data available for this flow"}, status=404)
+        
+        # Determine if IPv4 or IPv6
+        is_ipv6 = ":" in str(flow.ip_src)
+        
+        for item in raw_items:
+            try:
+                # Create IP layer
+                if is_ipv6:
+                    ip_layer = IPv6(src=str(flow.ip_src), dst=str(flow.ip_dst))
+                else:
+                    ip_layer = IP(src=str(flow.ip_src), dst=str(flow.ip_dst))
+                
+                # Determine direction and set ports accordingly
+                if item.direction == "out":
+                    sport = flow.port_src
+                    dport = flow.port_dst
+                else:
+                    sport = flow.port_dst
+                    dport = flow.port_src
+                
+                # Create transport layer (TCP or UDP based on tags)
+                if "tcp" in flow.tags:
+                    transport_layer = TCP(sport=sport, dport=dport)
+                elif "udp" in flow.tags:
+                    transport_layer = UDP(sport=sport, dport=dport)
+                else:
+                    # Default to TCP if no tag specified
+                    transport_layer = TCP(sport=sport, dport=dport)
+                
+                # Build the packet
+                packet = Ether() / ip_layer / transport_layer / Raw(load=item.data)
+                
+                # Set timestamp
+                packet.time = item.time.timestamp()
+                
+                packets.append(packet)
+                
+            except Exception as e:
+                # Log error but continue processing other packets
+                print(f"Error creating packet: {e}")
+                continue
+        
+        if not packets:
+            return return_json_response({"error": "Failed to generate any packets"}, status=500)
+        
+        # Write packets to temporary file
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.pcap', delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            wrpcap(tmp_path, packets)
+        
+        # Generate filename
+        filename = f"tulip_flow_{flow_id}.pcap"
+        
+        # Send file and clean up
+        response = send_file(
+            tmp_path,
+            mimetype="application/vnd.tcpdump.pcap",
+            as_attachment=True,
+            download_name=filename
+        )
+        
+        # Schedule file deletion after sending
+        @response.call_on_close
+        def cleanup():
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+        
+        return response
+        
+    except Exception as e:
+        traceback.print_exc()
+        return return_json_response(
+            {"error": f"Failed to generate PCAP: {str(e)}"},
+            status=500
+        )
+
 @application.route("/to_single_python_request", methods=["POST"])
 @requires_auth
 def convertToSingleRequest():
