@@ -33,6 +33,7 @@ import { DarkModeToggle } from "./DarkModeToggle";
 
 function ConfigButton() {
   const { data: authStatus } = useCheckAuthStatusQuery();
+  const navigate = useNavigate();
   let [searchParams] = useSearchParams();
 
   // Only show config button if user is authenticated
@@ -41,11 +42,12 @@ function ConfigButton() {
   }
 
   return (
-    <Link to={`/config?${searchParams}`}>
-      <button className="ml-4 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm">
-        Config
-      </button>
-    </Link>
+    <button 
+      onClick={() => navigate(`/config?${searchParams}`)}
+      className="ml-4 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm"
+    >
+      Config
+    </button>
   );
 }
 
