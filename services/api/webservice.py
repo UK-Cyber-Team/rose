@@ -316,6 +316,108 @@ def getServices():
     return return_json_response(services)
 
 
+@application.route("/services/config")
+@requires_auth
+def getServicesConfig():
+    """Get service configuration including VM_IP for form defaults"""
+    from configurations import vm_ip, load_services
+    return jsonify({
+        'services': load_services(),
+        'vm_ip': vm_ip
+    })
+
+
+@application.route("/services/config", methods=["POST"])
+@requires_auth
+def addService():
+    """Add a new service to configuration"""
+    import ipaddress
+    from configurations import load_services, save_services
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    ip = data.get('ip', '').strip()
+    port = data.get('port')
+    
+    # Validation
+    if not name:
+        return jsonify({'error': 'Service name is required'}), 400
+    
+    if not ip:
+        return jsonify({'error': 'IP address is required'}), 400
+    
+    # Validate IP address (IPv4 or IPv6)
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        return jsonify({'error': 'Invalid IP address format'}), 400
+    
+    # Validate port
+    try:
+        port = int(port)
+        if port < 1 or port > 65535:
+            return jsonify({'error': 'Port must be between 1 and 65535'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid port number'}), 400
+    
+    # Load current services
+    current_services = load_services()
+    
+    # Check for duplicates
+    for service in current_services:
+        if service['name'] == name and service['ip'] == ip and service['port'] == port:
+            return jsonify({'error': 'Service already exists'}), 400
+    
+    # Add new service
+    new_service = {'name': name, 'ip': ip, 'port': port}
+    current_services.append(new_service)
+    
+    # Save services
+    if save_services(current_services):
+        return jsonify({'success': True, 'service': new_service})
+    else:
+        return jsonify({'error': 'Failed to save service configuration'}), 500
+
+
+@application.route("/services/config/<int:index>", methods=["DELETE"])
+@requires_auth
+def deleteService(index):
+    """Delete a service by index"""
+    from configurations import load_services, save_services
+    
+    current_services = load_services()
+    
+    if index < 0 or index >= len(current_services):
+        return jsonify({'error': 'Invalid service index'}), 400
+    
+    removed_service = current_services.pop(index)
+    
+    if save_services(current_services):
+        return jsonify({'success': True, 'removed': removed_service})
+    else:
+        return jsonify({'error': 'Failed to save service configuration'}), 500
+
+
+@application.route("/services/reload", methods=["POST"])
+@requires_auth
+def reloadServices():
+    """Reload services configuration in memory"""
+    from configurations import load_services
+    
+    # Reload services in memory
+    global services
+    services = load_services()
+    
+    # Return success - the configuration is now active in memory
+    # A full rebuild is only needed if you want to persist the changes across container restarts
+    return jsonify({
+        'success': True,
+        'message': f'Services configuration reloaded successfully ({len(services)} services active)',
+        'services_count': len(services),
+        'note': 'Configuration is active immediately. For persistence across container restarts, run: docker compose up --build -d api'
+    })
+
+
 @application.route("/flag_regex")
 @requires_auth
 def getFlagRegex():

@@ -50,7 +50,7 @@ function CopyButton({ copyText }: { copyText?: string }) {
     <>
       {copyText && (
         <button
-          className="p-2 text-sm text-blue-500"
+          className="p-2 text-sm text-blue-500 dark:text-blue-300 disabled:text-blue-300/60 dark:disabled:text-blue-200/50 transition-colors duration-150"
           onClick={copy}
           disabled={!copyText}
         >
@@ -69,11 +69,13 @@ function FlowContainer({
   children: React.ReactNode;
 }) {
   return (
-    <div className=" pb-5 flex flex-col">
+    <div className="pb-5 flex flex-col gap-2">
       <div className="ml-auto">
         <CopyButton copyText={copyText}></CopyButton>
       </div>
-      <pre className="p-5 overflow-auto text-black dark:text-white">{children}</pre>
+      <pre className="p-5 overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-inner transition-colors duration-150">
+        {children}
+      </pre>
     </div>
   );
 }
@@ -258,9 +260,9 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
         <div className="flex items-center h-6">
           <div className="w-8 px-2">
             {flow.from === "s" ? (
-              <ArrowCircleLeftIcon className="fill-green-700" />
+              <ArrowCircleLeftIcon className="fill-green-700 dark:fill-green-400 transition-colors duration-150" />
             ) : (
-              <ArrowCircleRightIcon className="fill-red-700" />
+              <ArrowCircleRightIcon className="fill-red-700 dark:fill-red-400 transition-colors duration-150" />
             )}
           </div>
           <div style={{ width: 200 }} className="text-black dark:text-white">

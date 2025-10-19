@@ -22,7 +22,6 @@ import { toggleFilterFuzzyHashes, toggleFilterTag, toggleTagIntersectMode } from
 import { HeartIcon, FilterIcon, LinkIcon } from "@heroicons/react/solid";
 import { HeartIcon as EmptyHeartIcon } from "@heroicons/react/outline";
 
-import classes from "./FlowList.module.css";
 import { format } from "date-fns";
 import useDebounce from "../hooks/useDebounce";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
@@ -34,6 +33,13 @@ import {
   useGetTagsQuery,
   useStarFlowMutation,
 } from "../api";
+
+const flowItemBaseClasses =
+  "list-none rounded-md border border-transparent bg-gray-100 dark:bg-gray-800 p-2 text-gray-900 dark:text-gray-100 transition-colors duration-150 shadow-sm mb-1 last:mb-0";
+const flowItemHoverClasses =
+  "hover:bg-gray-200/70 dark:hover:bg-gray-700/70";
+const flowItemActiveClasses =
+  "border-l-4 border-gray-500 dark:border-gray-400 bg-gray-300/60 dark:bg-blue-900/70 shadow-md";
 
 export function FlowList() {
   let [searchParams] = useSearchParams();
@@ -192,7 +198,7 @@ export function FlowList() {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-transparent">
       <div className="bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex" style={{ height: 50 }}>
           <button
@@ -259,11 +265,10 @@ export function FlowList() {
       <div></div>
       { searchMessage && <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-2 border-b border-blue-200 dark:border-blue-800">{searchMessage}</div> }
       <Virtuoso
-        className={classNames({
-          "flex-1": true,
-          [classes.list_container]: true,
-          "sidebar-loading": isLoading,
-        })}
+        className={classNames(
+          "flex-1 flex flex-col gap-1 px-1 pt-1 overflow-y-auto",
+          { "sidebar-loading": isLoading },
+        )}
         style={{ backgroundColor: 'transparent' }}
         data={transformedFlowData}
         ref={virtuoso}
@@ -273,7 +278,8 @@ export function FlowList() {
             to={`/flow/${flow.id}?${searchParams}`}
             onClick={() => setFlowIndex(index)}
             key={flow.id}
-            className="focus-visible:rounded-md"
+            className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400 rounded-md"
+            aria-current={flow.id === openedFlowID ? "location" : undefined}
             //style={{ paddingTop: '1em' }}
           >
             <FlowListEntry
@@ -308,13 +314,18 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
     flow.duration > 10000 ? (
       <div className="text-red-500 dark:text-red-400">&gt;10s</div>
     ) : (
-      <div>{flow.duration}ms</div>
+      <div className="text-gray-700 dark:text-gray-200">{flow.duration}ms</div>
     );
   return (
-    <li
-      className={classNames({
-        [classes.active]: isActive,
-      })}
+    <article
+      role="listitem"
+      className={classNames(
+        flowItemBaseClasses,
+        flowItemHoverClasses,
+        {
+          [flowItemActiveClasses]: isActive,
+        }
+      )}
     >
       <div className="flex">
         <div
@@ -327,7 +338,7 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
           {isStarred ? (
             <HeartIcon className="text-red-500" />
           ) : (
-            <EmptyHeartIcon />
+            <EmptyHeartIcon className="text-gray-400 dark:text-gray-500" />
           )}
         </div>
 
@@ -358,7 +369,7 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
           </div>
         </div>
       </div>
-    </li>
+    </article>
   );
 }
 
