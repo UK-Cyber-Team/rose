@@ -31,6 +31,9 @@ import {
   useLazyToPwnToolsQuery,
   useToSinglePythonRequestQuery,
   useGetFlagRegexQuery,
+  useGetTagsQuery,
+  useCreateTagMutation,
+  useAddTagToFlowMutation,
 } from "../api";
 import { getTickStuff } from "../tick";
 import { toggleFilterFuzzyHashes, toggleFilterTag } from "../store/filter";
@@ -265,7 +268,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
             <span className="text-gray-400 dark:text-gray-500 pl-3">{delta_time}ms</span>
           </div>
           <button
-            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
+            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-xs md:text-sm whitespace-nowrap"
             onClick={async () => {
               window.open(
                 "https://gchq.github.io/CyberChef/#input=" +
@@ -277,7 +280,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
           </button>
           {flowType == "Web" && flowBody && (
             <button
-              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm ml-2"
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-xs md:text-sm ml-2 whitespace-nowrap"
               onClick={async () => {
                 window.open(
                   "https://gchq.github.io/CyberChef/#input=" +
@@ -369,6 +372,71 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
   const dispatch = useAppDispatch();
   const { unixTimeToTick } = getTickStuff();
   const { data: services } = useGetServicesQuery();
+  const { data: availableTags } = useGetTagsQuery();
+  const [createTag] = useCreateTagMutation();
+  const [addTagToFlow] = useAddTagToFlowMutation();
+  
+  const [newTagName, setNewTagName] = useState("");
+  const [selectedTagToAdd, setSelectedTagToAdd] = useState("");
+  const [tagError, setTagError] = useState("");
+  const [tagSuccess, setTagSuccess] = useState("");
+
+  const handleCreateTag = async () => {
+    setTagError("");
+    setTagSuccess("");
+    
+    if (!newTagName.trim()) {
+      setTagError("Tag name cannot be empty");
+      return;
+    }
+    
+    try {
+      await createTag({ name: newTagName.trim() }).unwrap();
+      setTagSuccess(`Tag "${newTagName}" created successfully`);
+      setNewTagName("");
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to create tag");
+    }
+  };
+
+  const handleAddTag = async () => {
+    setTagError("");
+    setTagSuccess("");
+    
+    if (!selectedTagToAdd) {
+      setTagError("Please select a tag");
+      return;
+    }
+    
+    try {
+      await addTagToFlow({ 
+        flowId: flow.id, 
+        tag: selectedTagToAdd, 
+        apply: true 
+      }).unwrap();
+      setTagSuccess(`Tag "${selectedTagToAdd}" added to flow`);
+      setSelectedTagToAdd("");
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to add tag");
+    }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    try {
+      await addTagToFlow({ 
+        flowId: flow.id, 
+        tag: tag, 
+        apply: false 
+      }).unwrap();
+      setTagSuccess(`Tag "${tag}" removed from flow`);
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to remove tag");
+    }
+  };
+
   const service = services?.find((s) => s.ip === flow.dst_ip && s.port === flow.dst_port)?.name ?? "unknown";
   return (
     <div>
@@ -409,6 +477,10 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
         <div className="font-extrabold text-black dark:text-white">Meta</div>
         <div className="pl-2">
           <div className="text-black dark:text-white">
+            Flow ID:&nbsp;
+            <span className="font-mono font-bold text-black dark:text-white">{flow.id}</span>
+          </div>
+          <div className="text-black dark:text-white">
             Source:&nbsp;
             <a className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
               {flow.filename}
@@ -417,8 +489,78 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
           <div className="text-black dark:text-white">
             Tags:&nbsp;
-            <span className="font-bold text-black dark:text-white">[{flow.tags.join(", ")}]</span>
+            <span className="font-bold text-black dark:text-white">
+              [{flow.tags.map((tag, i) => (
+                <span key={tag}>
+                  {i > 0 ? ", " : ""}
+                  {tag}
+                  {!["tcp", "udp", "http", "flag-in", "flag-out", "flagid-in", "flagid-out", "blocked", "suricata", "starred"].includes(tag) && (
+                    <button
+                      className="ml-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
+                      onClick={() => handleRemoveTag(tag)}
+                      title="Remove this tag"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              ))}]
+            </span>
           </div>
+          
+          {/* Custom Tag Management */}
+          <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded border border-yellow-300 dark:border-yellow-700">
+            <div className="text-sm font-semibold text-black dark:text-white mb-2">Tag Management</div>
+            
+            {/* Add existing tag to flow */}
+            <div className="flex gap-2 mb-2">
+              <select
+                value={selectedTagToAdd}
+                onChange={(e) => setSelectedTagToAdd(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-black dark:text-white"
+              >
+                <option value="">Select a tag to add...</option>
+                {availableTags?.filter(t => !flow.tags.includes(t)).map(tag => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddTag}
+                disabled={!selectedTagToAdd}
+                className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Tag
+              </button>
+            </div>
+            
+            {/* Create new tag */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCreateTag()}
+                placeholder="Create new tag..."
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              />
+              <button
+                onClick={handleCreateTag}
+                disabled={!newTagName.trim()}
+                className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
+            
+            {/* Status messages */}
+            {tagError && (
+              <div className="mt-2 text-sm text-red-600 dark:text-red-400">{tagError}</div>
+            )}
+            {tagSuccess && (
+              <div className="mt-2 text-sm text-green-600 dark:text-green-400">{tagSuccess}</div>
+            )}
+          </div>
+          
           <div className="text-black dark:text-white">
             Tick:&nbsp;
             <span className="font-bold text-black dark:text-white">{unixTimeToTick(flow.time)}</span>
@@ -614,13 +756,13 @@ export function FlowView() {
   return (
     <div>
       <div
-        className="sticky shadow-md top-0 bg-white dark:bg-gray-800 overflow-auto border-b border-b-gray-200 dark:border-b-gray-700 flex"
-        style={{ height: SECONDARY_NAVBAR_HEIGHT, zIndex: 100 }}
+        className="sticky shadow-md top-0 bg-white dark:bg-gray-800 overflow-auto border-b border-b-gray-200 dark:border-b-gray-700 flex flex-wrap gap-2 px-2 py-1 md:py-0"
+        style={{ minHeight: SECONDARY_NAVBAR_HEIGHT, zIndex: 100 }}
       >
         {(flow?.child_id != null || flow?.parent_id != null) ? (
-          <div className="flex align-middle p-2 gap-3">
+          <div className="flex align-middle gap-2 md:gap-3 py-1">
             <button
-              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-xs md:text-sm rounded-md disabled:opacity-50 whitespace-nowrap"
               key={"parent" + flow.parent_id}
               disabled={flow?.parent_id === null}
               onMouseDown={(e) => {
@@ -631,10 +773,10 @@ export function FlowView() {
                 }
               }}
             >
-              <ArrowCircleUpIcon className="inline-flex items-baseline w-5 h-5"></ArrowCircleUpIcon> Parent
+              <ArrowCircleUpIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5"></ArrowCircleUpIcon> <span className="hidden sm:inline">Parent</span>
             </button>
             <button
-              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-xs md:text-sm rounded-md disabled:opacity-50 whitespace-nowrap"
               key={"child" + flow.child_id}
               disabled={flow?.child_id === null}
               onMouseDown={(e) => {
@@ -645,16 +787,16 @@ export function FlowView() {
                 }
               }}
             >
-              <ArrowCircleDownIcon className="inline-flex items-baseline w-5 h-5"></ArrowCircleDownIcon> Child
+              <ArrowCircleDownIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5"></ArrowCircleDownIcon> <span className="hidden sm:inline">Child</span>
             </button>
           </div>
         ) : undefined}
-        <div className="flex align-middle p-2 gap-3 ml-auto">
-          <p className="my-auto text-gray-900 dark:text-gray-100">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
+        <div className="flex align-middle gap-2 md:gap-3 ml-auto py-1 flex-wrap">
+          <p className="my-auto text-gray-900 dark:text-gray-100 text-xs md:text-base">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
           <select
             id="repr-select"
             value={reprId}
-            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-blue-900 text-black dark:text-blue-100 px-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-blue-900 text-black dark:text-blue-100 px-2 text-xs md:text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             onChange={(e) => {
               const target = e.target as HTMLSelectElement;
               const newreprid = parseInt(target.value);
@@ -664,7 +806,7 @@ export function FlowView() {
             {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i} className="bg-white dark:bg-blue-900 text-black dark:text-blue-100">{e["type"]}</option>)}
           </select>
           {reprId > 0 ? <button
-            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             title="Diff this representation with the base"
             onClick={(e) => {
               searchParams.set(FIRST_DIFF_KEY, `${id}`);
@@ -672,31 +814,31 @@ export function FlowView() {
               navigate(`/diff/${id ?? ""}?${searchParams}`, { replace: true });
             }}
           >
-            <LightningBoltIcon className="h-5 w-5"></LightningBoltIcon>
+            <LightningBoltIcon className="h-4 w-4 md:h-5 md:w-5"></LightningBoltIcon>
           </button> : undefined}
           <button
-            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={copyPwn}
           >
             {pwnCopyStatusText}
           </button>
 
           <button
-            className="bg-gray-700 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={copyRequests}
           >
             {requestsCopyStatusText}
           </button>
 
           <button
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 text-sm rounded-md"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={() => {
               const url = `${API_BASE_PATH}/flow/${id}/pcap`;
               window.location.href = url;
             }}
             title="Download this flow as a PCAP file"
           >
-            <DownloadIcon className="inline-flex items-baseline w-5 h-5" /> PCAP
+            <DownloadIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5" /> <span className="hidden sm:inline">PCAP</span>
           </button>
         </div>
       </div>
