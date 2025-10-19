@@ -268,7 +268,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
             <span className="text-gray-400 dark:text-gray-500 pl-3">{delta_time}ms</span>
           </div>
           <button
-            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm"
+            className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-xs md:text-sm whitespace-nowrap"
             onClick={async () => {
               window.open(
                 "https://gchq.github.io/CyberChef/#input=" +
@@ -280,7 +280,7 @@ function Flow({ full_flow, flow, flow_item_index, delta_time, id }: FlowProps) {
           </button>
           {flowType == "Web" && flowBody && (
             <button
-              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-sm ml-2"
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 py-1 px-2 rounded-md text-xs md:text-sm ml-2 whitespace-nowrap"
               onClick={async () => {
                 window.open(
                   "https://gchq.github.io/CyberChef/#input=" +
@@ -478,7 +478,7 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
         <div className="pl-2">
           <div className="text-black dark:text-white">
             Flow ID:&nbsp;
-            <span className="font-mono text-sm font-bold text-black dark:text-white">{flow.id}</span>
+            <span className="font-mono font-bold text-black dark:text-white">{flow.id}</span>
           </div>
           <div className="text-black dark:text-white">
             Source:&nbsp;
@@ -756,13 +756,13 @@ export function FlowView() {
   return (
     <div>
       <div
-        className="sticky shadow-md top-0 bg-white dark:bg-gray-800 overflow-auto border-b border-b-gray-200 dark:border-b-gray-700 flex"
-        style={{ height: SECONDARY_NAVBAR_HEIGHT, zIndex: 100 }}
+        className="sticky shadow-md top-0 bg-white dark:bg-gray-800 overflow-auto border-b border-b-gray-200 dark:border-b-gray-700 flex flex-wrap gap-2 px-2 py-1 md:py-0"
+        style={{ minHeight: SECONDARY_NAVBAR_HEIGHT, zIndex: 100 }}
       >
         {(flow?.child_id != null || flow?.parent_id != null) ? (
-          <div className="flex align-middle p-2 gap-3">
+          <div className="flex align-middle gap-2 md:gap-3 py-1">
             <button
-              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-xs md:text-sm rounded-md disabled:opacity-50 whitespace-nowrap"
               key={"parent" + flow.parent_id}
               disabled={flow?.parent_id === null}
               onMouseDown={(e) => {
@@ -773,10 +773,10 @@ export function FlowView() {
                 }
               }}
             >
-              <ArrowCircleUpIcon className="inline-flex items-baseline w-5 h-5"></ArrowCircleUpIcon> Parent
+              <ArrowCircleUpIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5"></ArrowCircleUpIcon> <span className="hidden sm:inline">Parent</span>
             </button>
             <button
-              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-sm rounded-md disabled:opacity-50"
+              className="bg-yellow-700 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-500 text-white px-2 text-xs md:text-sm rounded-md disabled:opacity-50 whitespace-nowrap"
               key={"child" + flow.child_id}
               disabled={flow?.child_id === null}
               onMouseDown={(e) => {
@@ -787,16 +787,16 @@ export function FlowView() {
                 }
               }}
             >
-              <ArrowCircleDownIcon className="inline-flex items-baseline w-5 h-5"></ArrowCircleDownIcon> Child
+              <ArrowCircleDownIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5"></ArrowCircleDownIcon> <span className="hidden sm:inline">Child</span>
             </button>
           </div>
         ) : undefined}
-        <div className="flex align-middle p-2 gap-3 ml-auto">
-          <p className="my-auto text-gray-900 dark:text-gray-100">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
+        <div className="flex align-middle gap-2 md:gap-3 ml-auto py-1 flex-wrap">
+          <p className="my-auto text-gray-900 dark:text-gray-100 text-xs md:text-base">Decoders <abbr title={"Number of decoders available for this flow: " + flow?.flow.length}>({flow?.flow.length})</abbr>:</p>
           <select
             id="repr-select"
             value={reprId}
-            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-blue-900 text-black dark:text-blue-100 px-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="border-2 border-gray-700 dark:border-gray-400 bg-white dark:bg-blue-900 text-black dark:text-blue-100 px-2 text-xs md:text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             onChange={(e) => {
               const target = e.target as HTMLSelectElement;
               const newreprid = parseInt(target.value);
@@ -806,7 +806,7 @@ export function FlowView() {
             {flow?.flow.map((e, i) => <option key={id + "reprselect" + i} value={i} className="bg-white dark:bg-blue-900 text-black dark:text-blue-100">{e["type"]}</option>)}
           </select>
           {reprId > 0 ? <button
-            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             title="Diff this representation with the base"
             onClick={(e) => {
               searchParams.set(FIRST_DIFF_KEY, `${id}`);
@@ -814,31 +814,31 @@ export function FlowView() {
               navigate(`/diff/${id ?? ""}?${searchParams}`, { replace: true });
             }}
           >
-            <LightningBoltIcon className="h-5 w-5"></LightningBoltIcon>
+            <LightningBoltIcon className="h-4 w-4 md:h-5 md:w-5"></LightningBoltIcon>
           </button> : undefined}
           <button
-            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={copyPwn}
           >
             {pwnCopyStatusText}
           </button>
 
           <button
-            className="bg-gray-700 text-white px-2 text-sm rounded-md"
+            className="bg-gray-700 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={copyRequests}
           >
             {requestsCopyStatusText}
           </button>
 
           <button
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 text-sm rounded-md"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 text-xs md:text-sm rounded-md whitespace-nowrap"
             onClick={() => {
               const url = `${API_BASE_PATH}/flow/${id}/pcap`;
               window.location.href = url;
             }}
             title="Download this flow as a PCAP file"
           >
-            <DownloadIcon className="inline-flex items-baseline w-5 h-5" /> PCAP
+            <DownloadIcon className="inline-flex items-baseline w-4 h-4 md:w-5 md:h-5" /> <span className="hidden sm:inline">PCAP</span>
           </button>
         </div>
       </div>
