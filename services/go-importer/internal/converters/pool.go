@@ -12,37 +12,37 @@ import (
 var serviceConfig = map[int][][]string{
 	// CyberUniAuth
 	1234: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// ExamNotes
 	1235: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// EncryptedNotes
 	1236: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	1237: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// RPN
 	1337: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// closedsea
 	3003: {
 		// Protocol
 		{"websockets"},
 		// Various encodings one could use (should always be last)
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// closedseaMinter
 	3004: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 	// Trademark
 	5000: {
-		{"b64decode"},
+		{"b64decode", "hexdecode"},
 	},
 }
 

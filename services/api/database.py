@@ -350,3 +350,22 @@ class Connection(psycopg.Connection):
         with self.cursor(row_factory=dict_row) as cursor:
             tags = cursor.execute("SELECT name FROM tag ORDER BY sort ASC").fetchall()
             return [t["name"] for t in tags]
+
+    def tag_create(self, tag_name: str) -> bool:
+        """
+        Create a new custom tag if it doesn't already exist.
+        Returns True if created, False if already exists.
+        """
+        # Check if tag already exists
+        existing_tags = self.tag_list()
+        if tag_name in existing_tags:
+            return False
+        
+        # Insert new tag
+        sql_query = """
+            INSERT INTO tag (name)
+            VALUES (%(tag_name)s)
+            ON CONFLICT (name) DO NOTHING
+        """
+        self.execute(sql_query, {"tag_name": tag_name})
+        return True

@@ -245,6 +245,60 @@ def getTags():
     return return_json_response(tags)
 
 
+@application.route("/tags", methods=["POST"])
+@requires_auth
+def createTag():
+    """Create a new custom tag"""
+    query = request.get_json()
+    tag_name = query.get("name", "").strip()
+    
+    if not tag_name:
+        return return_json_response(
+            {"error": "Tag name is required"},
+            status=400
+        )
+    
+    # Validate tag name (alphanumeric, hyphens, underscores only)
+    import re
+    if not re.match(r'^[a-zA-Z0-9_-]+$', tag_name):
+        return return_json_response(
+            {"error": "Tag name must contain only letters, numbers, hyphens, and underscores"},
+            status=400
+        )
+    
+    with db.connection() as c:
+        created = c.tag_create(tag_name)
+    
+    if created:
+        return return_json_response({"success": True, "tag": tag_name})
+    else:
+        return return_json_response(
+            {"error": "Tag already exists"},
+            status=409
+        )
+
+
+@application.route("/flow/<id>/tag", methods=["POST"])
+@requires_auth
+def addTagToFlow(id):
+    """Add or remove a tag from a flow"""
+    flow_id = uuid.UUID(id)
+    query = request.get_json()
+    tag_name = query.get("tag", "").strip()
+    apply = bool(query.get("apply", True))
+    
+    if not tag_name:
+        return return_json_response(
+            {"error": "Tag name is required"},
+            status=400
+        )
+    
+    with db.connection() as c:
+        c.flow_tag(flow_id, tag_name, apply)
+    
+    return return_json_response({"success": True, "flow_id": str(flow_id), "tag": tag_name, "applied": apply})
+
+
 @application.route("/star", methods=["POST"])
 @requires_auth
 def setStar():

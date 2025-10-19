@@ -31,6 +31,9 @@ import {
   useLazyToPwnToolsQuery,
   useToSinglePythonRequestQuery,
   useGetFlagRegexQuery,
+  useGetTagsQuery,
+  useCreateTagMutation,
+  useAddTagToFlowMutation,
 } from "../api";
 import { getTickStuff } from "../tick";
 import { toggleFilterFuzzyHashes, toggleFilterTag } from "../store/filter";
@@ -369,6 +372,71 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
   const dispatch = useAppDispatch();
   const { unixTimeToTick } = getTickStuff();
   const { data: services } = useGetServicesQuery();
+  const { data: availableTags } = useGetTagsQuery();
+  const [createTag] = useCreateTagMutation();
+  const [addTagToFlow] = useAddTagToFlowMutation();
+  
+  const [newTagName, setNewTagName] = useState("");
+  const [selectedTagToAdd, setSelectedTagToAdd] = useState("");
+  const [tagError, setTagError] = useState("");
+  const [tagSuccess, setTagSuccess] = useState("");
+
+  const handleCreateTag = async () => {
+    setTagError("");
+    setTagSuccess("");
+    
+    if (!newTagName.trim()) {
+      setTagError("Tag name cannot be empty");
+      return;
+    }
+    
+    try {
+      await createTag({ name: newTagName.trim() }).unwrap();
+      setTagSuccess(`Tag "${newTagName}" created successfully`);
+      setNewTagName("");
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to create tag");
+    }
+  };
+
+  const handleAddTag = async () => {
+    setTagError("");
+    setTagSuccess("");
+    
+    if (!selectedTagToAdd) {
+      setTagError("Please select a tag");
+      return;
+    }
+    
+    try {
+      await addTagToFlow({ 
+        flowId: flow.id, 
+        tag: selectedTagToAdd, 
+        apply: true 
+      }).unwrap();
+      setTagSuccess(`Tag "${selectedTagToAdd}" added to flow`);
+      setSelectedTagToAdd("");
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to add tag");
+    }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    try {
+      await addTagToFlow({ 
+        flowId: flow.id, 
+        tag: tag, 
+        apply: false 
+      }).unwrap();
+      setTagSuccess(`Tag "${tag}" removed from flow`);
+      setTimeout(() => setTagSuccess(""), 3000);
+    } catch (error: any) {
+      setTagError(error?.data?.error || "Failed to remove tag");
+    }
+  };
+
   const service = services?.find((s) => s.ip === flow.dst_ip && s.port === flow.dst_port)?.name ?? "unknown";
   return (
     <div>
@@ -417,8 +485,78 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
           <div className="text-black dark:text-white">
             Tags:&nbsp;
-            <span className="font-bold text-black dark:text-white">[{flow.tags.join(", ")}]</span>
+            <span className="font-bold text-black dark:text-white">
+              [{flow.tags.map((tag, i) => (
+                <span key={tag}>
+                  {i > 0 ? ", " : ""}
+                  {tag}
+                  {!["tcp", "udp", "http", "flag-in", "flag-out", "flagid-in", "flagid-out", "blocked", "suricata", "starred"].includes(tag) && (
+                    <button
+                      className="ml-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
+                      onClick={() => handleRemoveTag(tag)}
+                      title="Remove this tag"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              ))}]
+            </span>
           </div>
+          
+          {/* Custom Tag Management */}
+          <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded border border-yellow-300 dark:border-yellow-700">
+            <div className="text-sm font-semibold text-black dark:text-white mb-2">Tag Management</div>
+            
+            {/* Add existing tag to flow */}
+            <div className="flex gap-2 mb-2">
+              <select
+                value={selectedTagToAdd}
+                onChange={(e) => setSelectedTagToAdd(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-black dark:text-white"
+              >
+                <option value="">Select a tag to add...</option>
+                {availableTags?.filter(t => !flow.tags.includes(t)).map(tag => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddTag}
+                disabled={!selectedTagToAdd}
+                className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Tag
+              </button>
+            </div>
+            
+            {/* Create new tag */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCreateTag()}
+                placeholder="Create new tag..."
+                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              />
+              <button
+                onClick={handleCreateTag}
+                disabled={!newTagName.trim()}
+                className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
+            
+            {/* Status messages */}
+            {tagError && (
+              <div className="mt-2 text-sm text-red-600 dark:text-red-400">{tagError}</div>
+            )}
+            {tagSuccess && (
+              <div className="mt-2 text-sm text-green-600 dark:text-green-400">{tagSuccess}</div>
+            )}
+          </div>
+          
           <div className="text-black dark:text-white">
             Tick:&nbsp;
             <span className="font-bold text-black dark:text-white">{unixTimeToTick(flow.time)}</span>

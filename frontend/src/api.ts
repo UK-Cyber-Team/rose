@@ -30,7 +30,7 @@ export const tulipApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Auth'],
+  tagTypes: ['Auth', 'Tag', 'Flow'],
   endpoints: (builder) => ({
     getServices: builder.query<Service[], void>({
       query: () => "/services",
@@ -201,6 +201,35 @@ export const tulipApi = createApi({
       //   }
       // },
     }),
+    createTag: builder.mutation<{ success: boolean; tag: string }, { name: string }>({
+      query: ({ name }) => ({
+        url: `/tags`,
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: { name },
+      }),
+      invalidatesTags: ["Tag"],
+    }),
+    addTagToFlow: builder.mutation<
+      { success: boolean; flow_id: string; tag: string; applied: boolean },
+      { flowId: string; tag: string; apply: boolean }
+    >({
+      query: ({ flowId, tag, apply }) => ({
+        url: `/flow/${flowId}/tag`,
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: { tag, apply },
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        { type: "Flow", id: arg.flowId },
+      ],
+    }),
     // Authentication endpoints
     checkAuthStatus: builder.query<{ authenticated: boolean; auth_required: boolean }, void>({
       query: () => '/auth/status',
@@ -236,6 +265,8 @@ export const {
   useLazyToFullPythonRequestQuery,
   useToSinglePythonRequestQuery,
   useStarFlowMutation,
+  useCreateTagMutation,
+  useAddTagToFlowMutation,
   useGetStatsQuery,
   useGetUnderAttackQuery,
   useCheckAuthStatusQuery,
