@@ -60,6 +60,7 @@ class Flow:
     flagids: list[str]
     rank: int = 0
     fuzzy_hash: str
+    notes: str = ""
 
 
 @dataclass(slots=True, kw_only=True)
