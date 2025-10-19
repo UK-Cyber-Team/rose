@@ -25,6 +25,7 @@ import {
   useGetServicesQuery,
   useLogoutMutation,
   useCheckAuthStatusQuery,
+  useLazyGetRandomFlowQuery,
 } from "../api";
 import { useAppSelector, useAppDispatch } from "../store";
 import { logout } from "../store/auth";
@@ -340,9 +341,53 @@ function SimilaritySlider() {
   );
 }
 
+function NoveltyModeToggle({ isNoveltyMode, setIsNoveltyMode }: { isNoveltyMode: boolean; setIsNoveltyMode: (value: boolean) => void }) {
+  return (
+    <button
+      onClick={() => setIsNoveltyMode(!isNoveltyMode)}
+      className="text-3xl hover:scale-110 transition-transform"
+      title={isNoveltyMode ? "Novelty Mode (Click for Business Mode)" : "Business Mode (Click for Novelty Mode)"}
+    >
+      {isNoveltyMode ? "🤡" : "💼"}
+    </button>
+  );
+}
+
+function FeelingLuckyButton({ isNoveltyMode }: { isNoveltyMode: boolean }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [triggerRandom, { isLoading }] = useLazyGetRandomFlowQuery();
+
+  const handleClick = async () => {
+    try {
+      const result = await triggerRandom().unwrap();
+      if (result?.id) {
+        navigate(`/flow/${result.id}?${searchParams}`);
+      }
+    } catch (error) {
+      console.error('Failed to get random flow:', error);
+    }
+  };
+
+  if (!isNoveltyMode) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={isLoading}
+      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-md px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isLoading ? "🎲 Loading..." : "🎲 I'm feeling lucky"}
+    </button>
+  );
+}
+
 export function Header() {
   let { currentTick, setToLastnTicks, setTimeParam } = getTickStuff();
   let [searchParams] = useSearchParams();
+  const [isNoveltyMode, setIsNoveltyMode] = useState(false);
 
   useHotkeys('a', () => setToLastnTicks(5));
   useHotkeys('c', () => {
@@ -394,6 +439,10 @@ export function Header() {
         >
           Current: {currentTick}
         </div>
+        <div className="mx-6">
+          <NoveltyModeToggle isNoveltyMode={isNoveltyMode} setIsNoveltyMode={setIsNoveltyMode} />
+        </div>
+        <FeelingLuckyButton isNoveltyMode={isNoveltyMode} />
         <div className="mx-6">
           <DarkModeToggle />
         </div>

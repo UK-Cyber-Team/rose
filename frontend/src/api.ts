@@ -297,6 +297,10 @@ export const tulipApi = createApi({
       }),
       invalidatesTags: (result, error, { flowId }) => [{ type: 'Flow', id: `${flowId}-notes` }],
     }),
+    // Random flow endpoint
+    getRandomFlow: builder.query<{ id: string }, void>({
+      query: () => '/flow/random',
+    }),
   }),
 });
 
@@ -325,4 +329,6 @@ export const {
   useReloadServicesMutation,
   useGetFlowNotesQuery,
   useUpdateFlowNotesMutation,
+  useGetRandomFlowQuery,
+  useLazyGetRandomFlowQuery,
 } = tulipApi;

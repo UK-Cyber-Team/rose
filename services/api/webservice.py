@@ -469,6 +469,19 @@ def updateFlowNotes(id):
         return jsonify({"error": str(e)}), 500
 
 
+@application.route("/flow/random")
+@requires_auth
+def getRandomFlow():
+    """Get a random flow ID"""
+    with db.connection() as c:
+        flow_id = c.flow_random()
+    
+    if flow_id:
+        return jsonify({"id": str(flow_id)})
+    else:
+        return jsonify({"error": "No flows available"}), 404
+
+
 @application.route("/flow/<id>/pcap")
 @requires_auth
 def getFlowPcap(id):

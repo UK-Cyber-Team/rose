@@ -398,3 +398,18 @@ class Connection(psycopg.Connection):
         with self.cursor() as cursor:
             cursor.execute(sql_query, {"flow_id": flow_id, "notes": notes})
             return cursor.rowcount > 0
+
+    def flow_random(self) -> uuid.UUID | None:
+        """
+        Get a random flow ID from the database.
+        Returns a random flow ID or None if no flows exist.
+        """
+        sql_query = """
+            SELECT id
+            FROM flow
+            ORDER BY RANDOM()
+            LIMIT 1
+        """
+        with self.cursor(row_factory=dict_row) as cursor:
+            result = cursor.execute(sql_query).fetchone()
+            return result["id"] if result else None
