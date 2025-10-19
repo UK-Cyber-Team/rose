@@ -510,14 +510,13 @@ def getFlowPcap(id):
         # Determine if IPv4 or IPv6
         is_ipv6 = ":" in str(flow.ip_src)
         
+        # Maximum payload size to avoid length field overflow
+        # For IPv4: 65535 - 20 (IP) - 20 (TCP) = 65495
+        # For IPv6: 65535 - 40 (IPv6) - 20 (TCP) = 65475
+        MAX_PAYLOAD_SIZE = 65475 if is_ipv6 else 65495
+        
         for item in raw_items:
             try:
-                # Create IP layer
-                if is_ipv6:
-                    ip_layer = IPv6(src=str(flow.ip_src), dst=str(flow.ip_dst))
-                else:
-                    ip_layer = IP(src=str(flow.ip_src), dst=str(flow.ip_dst))
-                
                 # Determine direction and set ports accordingly
                 if item.direction == "out":
                     sport = flow.port_src
@@ -526,22 +525,37 @@ def getFlowPcap(id):
                     sport = flow.port_dst
                     dport = flow.port_src
                 
-                # Create transport layer (TCP or UDP based on tags)
-                if "tcp" in flow.tags:
-                    transport_layer = TCP(sport=sport, dport=dport)
-                elif "udp" in flow.tags:
-                    transport_layer = UDP(sport=sport, dport=dport)
-                else:
-                    # Default to TCP if no tag specified
-                    transport_layer = TCP(sport=sport, dport=dport)
+                # Split large payloads into multiple packets
+                data = item.data
+                offset = 0
                 
-                # Build the packet
-                packet = Ether() / ip_layer / transport_layer / Raw(load=item.data)
-                
-                # Set timestamp
-                packet.time = item.time.timestamp()
-                
-                packets.append(packet)
+                while offset < len(data):
+                    chunk = data[offset:offset + MAX_PAYLOAD_SIZE]
+                    
+                    # Create IP layer
+                    if is_ipv6:
+                        ip_layer = IPv6(src=str(flow.ip_src), dst=str(flow.ip_dst))
+                    else:
+                        ip_layer = IP(src=str(flow.ip_src), dst=str(flow.ip_dst))
+                    
+                    # Create transport layer (TCP or UDP based on tags)
+                    if "tcp" in flow.tags:
+                        transport_layer = TCP(sport=sport, dport=dport)
+                    elif "udp" in flow.tags:
+                        transport_layer = UDP(sport=sport, dport=dport)
+                    else:
+                        # Default to TCP if no tag specified
+                        transport_layer = TCP(sport=sport, dport=dport)
+                    
+                    # Build the packet with the chunk
+                    packet = Ether() / ip_layer / transport_layer / Raw(load=chunk)
+                    
+                    # Set timestamp
+                    packet.time = item.time.timestamp()
+                    
+                    packets.append(packet)
+                    
+                    offset += MAX_PAYLOAD_SIZE
                 
             except Exception as e:
                 # Log error but continue processing other packets
