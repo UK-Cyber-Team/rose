@@ -42,7 +42,7 @@ function ConfigButton() {
 
   return (
     <Link to={`/config?${searchParams}`}>
-      <button className="bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-gray-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm">
+      <button className="ml-4 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm">
         Config
       </button>
     </Link>

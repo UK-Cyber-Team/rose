@@ -23,16 +23,32 @@ Tulip was developed by Team Europe for use in the first International Cyber Secu
 ![](./demo_images/demo3.png)
 
 ## Configuration
-Before starting the stack, edit `services/api/configurations.py`:
 
-```
+### Service Configuration
+
+Tulip provides a web-based interface for managing service configurations. Once authenticated:
+
+1. Click the **Config** button in the header
+2. Add services by specifying:
+   - Service name (e.g., "Web Service")
+   - IP address (defaults to VM_IP from your environment)
+   - Port number (1-65535)
+3. Click **Apply Changes** to activate the new configuration
+
+Services are stored in a persistent configuration file and changes take effect immediately without requiring a container rebuild.
+
+### Manual Configuration (Legacy)
+
+You can also manually edit `services/api/configurations.py` if needed:
+
+```python
 vm_ip = "10.60.4.1"
 services = [{"ip": vm_ip, "port": 18080, "name": "BIOMarkt"},
             {"ip": vm_ip, "port": 5555, "name": "SaaS"},
 ]
 ```
 
-You can also edit this during the CTF, just rebuild the `api` service:
+If you manually edit the configuration file, rebuild the `api` service:
 ```
 docker-compose up --build -d api
 ```

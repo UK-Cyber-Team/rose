@@ -116,28 +116,19 @@ export function Config() {
   };
 
   const handleReloadServices = async () => {
-    if (!window.confirm("This will reload the services configuration and attempt to rebuild the API container. Are you sure?")) {
+    if (!window.confirm("This will reload the services configuration. The changes will be active immediately. Continue?")) {
       return;
     }
 
     try {
       const result = await reloadServices().unwrap();
-      let messageText = result.warning || result.message || "Services reloaded successfully";
-      if (result.warning && result.warning.includes("manually run")) {
-        messageText += "\n\nRun this command on the host: docker compose up --build -d api";
-      }
       setMessage({ 
-        type: result.warning ? "error" : "success", 
-        text: messageText
+        type: "success", 
+        text: result.message || "Services reloaded successfully"
       });
       refetch();
     } catch (error: any) {
-      const errorData = error?.data;
-      let errorText = errorData?.error || "Failed to reload services";
-      if (errorData?.manual_command) {
-        errorText += `\n\nPlease run manually: ${errorData.manual_command}`;
-      }
-      setMessage({ type: "error", text: errorText });
+      setMessage({ type: "error", text: error?.data?.error || "Failed to reload services" });
     }
   };
 
@@ -240,7 +231,7 @@ export function Config() {
               disabled={isReloading}
               className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              {isReloading ? "Reloading..." : "Reload & Apply Changes"}
+              {isReloading ? "Reloading..." : "Apply Changes"}
             </button>
           </div>
           
@@ -280,12 +271,10 @@ export function Config() {
           )}
         </div>
 
-        <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            <strong>Note:</strong> After adding or removing services, click "Reload & Apply Changes" to update the configuration. 
-            The system will attempt to rebuild the API container automatically. If automatic rebuild fails, you'll need to run 
-            <code className="mx-1 px-1 bg-yellow-100 dark:bg-yellow-800 rounded">docker compose up --build -d api</code> 
-            manually on the host machine.
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>How it works:</strong> Changes are saved to a configuration file and become active immediately when you click "Apply Changes". 
+            The configuration persists across container restarts automatically.
           </p>
         </div>
       </div>

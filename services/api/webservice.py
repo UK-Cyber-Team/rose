@@ -401,98 +401,21 @@ def deleteService(index):
 @application.route("/services/reload", methods=["POST"])
 @requires_auth
 def reloadServices():
-    """Reload services configuration and trigger docker-compose rebuild"""
-    import subprocess
+    """Reload services configuration in memory"""
     from configurations import load_services
     
     # Reload services in memory
     global services
     services = load_services()
     
-    try:
-        # Get the container ID
-        container_result = subprocess.run(
-            ['hostname'],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        container_id = container_result.stdout.strip()
-        
-        # Get the project directory from docker inspect
-        inspect_result = subprocess.run(
-            ['docker', 'inspect', container_id, '--format', '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        
-        project_dir = inspect_result.stdout.strip()
-        
-        if not project_dir or inspect_result.returncode != 0:
-            # Fallback: Try to find docker-compose.yml in common locations
-            project_dir = None
-            for potential_dir in ['/tulip', '/workspace', '/app']:
-                test_result = subprocess.run(
-                    ['docker', 'run', '--rm', '-v', f'{potential_dir}:/check:ro', 'alpine', 'test', '-f', '/check/docker-compose.yml'],
-                    capture_output=True,
-                    timeout=5
-                )
-                if test_result.returncode == 0:
-                    project_dir = potential_dir
-                    break
-        
-        if not project_dir:
-            return jsonify({
-                'success': True,
-                'warning': 'Services reloaded in memory. Please manually run: docker compose up --build -d api',
-                'services_count': len(services)
-            })
-        
-        # Get project name
-        project_name_result = subprocess.run(
-            ['docker', 'inspect', container_id, '--format', '{{index .Config.Labels "com.docker.compose.project"}}'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        project_name = project_name_result.stdout.strip() or 'tulip'
-        
-        # Trigger docker-compose rebuild for API service
-        result = subprocess.run(
-            ['docker', 'compose', '-f', f'{project_dir}/docker-compose.yml', '-p', project_name, 'up', '--build', '-d', 'api'],
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minute timeout
-        )
-        
-        if result.returncode == 0:
-            return jsonify({
-                'success': True,
-                'message': 'Services reloaded and API container rebuild initiated',
-                'services_count': len(services)
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Docker compose rebuild failed',
-                'stderr': result.stderr,
-                'manual_command': f'cd {project_dir} && docker compose up --build -d api'
-            }), 500
-    except subprocess.TimeoutExpired:
-        return jsonify({'error': 'Docker compose rebuild timed out'}), 500
-    except FileNotFoundError as e:
-        return jsonify({
-            'success': True,
-            'warning': f'Services reloaded in memory. Docker CLI not available ({str(e)}). Please manually run: docker compose up --build -d api',
-            'services_count': len(services)
-        })
-    except Exception as e:
-        return jsonify({
-            'success': True,
-            'warning': f'Services reloaded in memory. Auto-rebuild failed ({str(e)}). Please manually run: docker compose up --build -d api',
-            'services_count': len(services)
-        })
+    # Return success - the configuration is now active in memory
+    # A full rebuild is only needed if you want to persist the changes across container restarts
+    return jsonify({
+        'success': True,
+        'message': f'Services configuration reloaded successfully ({len(services)} services active)',
+        'services_count': len(services),
+        'note': 'Configuration is active immediately. For persistence across container restarts, run: docker compose up --build -d api'
+    })
 
 
 @application.route("/flag_regex")
