@@ -217,7 +217,7 @@ export function FlowList() {
                   Intersection filter
                 </p>
                 <button
-                  className="w-24 h-5 bg-blue-100 text-sm rounded-md ml-auto"
+                  className="w-24 h-5 bg-blue-100 dark:bg-blue-800/50 text-gray-900 dark:text-gray-100 text-sm rounded-md ml-auto"
                   onClick={() => dispatch(toggleTagIntersectMode())}
                 >
                   Mode:&nbsp;{tagIntersectionMode}
@@ -306,7 +306,7 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
 
   const duration =
     flow.duration > 10000 ? (
-      <div className="text-red-500">&gt;10s</div>
+      <div className="text-red-500 dark:text-red-400">&gt;10s</div>
     ) : (
       <div>{flow.duration}ms</div>
     );
@@ -333,7 +333,7 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
 
         <div className="w-5 mr-2 self-center shrink-0">
           {flow.child_id != null || flow.parent_id != null ? (
-            <LinkIcon className="text-blue-500" />
+            <LinkIcon className="text-blue-500 dark:text-blue-400" />
           ) : undefined}
         </div>
         <div className="flex-1 shrink">
@@ -347,9 +347,9 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
 
             <div className="ml-2">
               <span className="text-gray-500 dark:text-gray-400">{formatted_time_h_m_s}</span>
-              <span className="text-gray-300 dark:text-gray-500">{formatted_time_ms}</span>
+              <span className="text-gray-400 dark:text-gray-500">{formatted_time_ms}</span>
             </div>
-            <div className="text-gray-500 ml-auto">{duration}</div>
+            <div className="text-gray-500 dark:text-gray-400 ml-auto">{duration}</div>
           </div>
           <div className="flex gap-2 flex-wrap">
             {filtered_tag_list.map((tag) => (

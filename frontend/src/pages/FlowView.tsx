@@ -477,6 +477,10 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
         <div className="font-extrabold text-black dark:text-white">Meta</div>
         <div className="pl-2">
           <div className="text-black dark:text-white">
+            Flow ID:&nbsp;
+            <span className="font-mono text-sm font-bold text-black dark:text-white">{flow.id}</span>
+          </div>
+          <div className="text-black dark:text-white">
             Source:&nbsp;
             <a className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400" href={`${API_BASE_PATH}/download/?file=${flow.filename}`}>
               {flow.filename}
