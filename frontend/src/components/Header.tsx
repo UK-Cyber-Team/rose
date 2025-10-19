@@ -25,6 +25,7 @@ import {
   useGetServicesQuery,
   useLogoutMutation,
   useCheckAuthStatusQuery,
+  useLazyGetRandomFlowQuery,
 } from "../api";
 import { useAppSelector, useAppDispatch } from "../store";
 import { logout } from "../store/auth";
@@ -44,7 +45,7 @@ function ConfigButton() {
   return (
     <button 
       onClick={() => navigate(`/config?${searchParams}`)}
-      className="ml-4 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm"
+      className="bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm whitespace-nowrap"
     >
       Config
     </button>
@@ -73,7 +74,7 @@ function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="ml-4 bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-100 rounded-md px-2 py-1 text-sm"
+      className="bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-100 rounded-md px-2 py-1 text-sm whitespace-nowrap"
     >
       Logout
     </button>
@@ -217,7 +218,7 @@ function FirstDiff() {
   return (
     <input
       type="text"
-      className="md:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+      className="w-48 xl:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
       placeholder="First Diff ID"
       readOnly
       value={firstFlow}
@@ -260,7 +261,7 @@ function SecondDiff() {
   return (
     <input
       type="text"
-      className="md:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+      className="w-48 xl:w-72 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
       placeholder="Second Flow ID"
       readOnly
       value={secondFlow}
@@ -292,7 +293,7 @@ function Diff() {
 
   return (
     <button
-      className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-700 dark:hover:bg-amber-600 text-gray-800 dark:text-amber-100 rounded-md px-2 py-1"
+      className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-700 dark:hover:bg-amber-600 text-gray-800 dark:text-amber-100 rounded-md px-2 py-1 text-sm whitespace-nowrap"
       onClick={() => {
         navigateToDiff()
       }}
@@ -340,9 +341,53 @@ function SimilaritySlider() {
   );
 }
 
+function NoveltyModeToggle({ isNoveltyMode, setIsNoveltyMode }: { isNoveltyMode: boolean; setIsNoveltyMode: (value: boolean) => void }) {
+  return (
+    <button
+      onClick={() => setIsNoveltyMode(!isNoveltyMode)}
+      className="text-2xl md:text-3xl hover:scale-110 transition-transform flex-shrink-0"
+      title={isNoveltyMode ? "Business Mode (Click for Novelty Mode)" : "Novelty Mode (Click for Business Mode)"}
+    >
+      {isNoveltyMode ? "💼" : "🤡"}
+    </button>
+  );
+}
+
+function FeelingLuckyButton({ isNoveltyMode }: { isNoveltyMode: boolean }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [triggerRandom, { isLoading }] = useLazyGetRandomFlowQuery();
+
+  const handleClick = async () => {
+    try {
+      const result = await triggerRandom().unwrap();
+      if (result?.id) {
+        navigate(`/flow/${result.id}?${searchParams}`);
+      }
+    } catch (error) {
+      console.error('Failed to get random flow:', error);
+    }
+  };
+
+  if (!isNoveltyMode) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={isLoading}
+      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-md px-2 md:px-3 py-1 text-xs md:text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+    >
+      {isLoading ? "🎲 Loading..." : "🎲 I'm feeling lucky"}
+    </button>
+  );
+}
+
 export function Header() {
   let { currentTick, setToLastnTicks, setTimeParam } = getTickStuff();
   let [searchParams] = useSearchParams();
+  const [isNoveltyMode, setIsNoveltyMode] = useState(false);
 
   useHotkeys('a', () => setToLastnTicks(5));
   useHotkeys('c', () => {
@@ -354,49 +399,39 @@ export function Header() {
 
   return (
     <>
-      <Link to={`/?${searchParams}`}>
+      <Link to={`/?${searchParams}`} className="flex-shrink-0">
         <div className="header-icon">🥀</div>
       </Link>
-      <div>
+      <div className="flex-shrink-0">
         <TextSearch></TextSearch>
       </div>
-      <div>
+      <div className="flex-shrink-0">
         <Suspense>
           <ServiceSelection></ServiceSelection>
         </Suspense>
       </div>
-      <Link to={`/corrie?${searchParams}`}>
-        <div className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1">
+      <Link to={`/corrie?${searchParams}`} className="flex-shrink-0">
+        <div className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1 text-sm whitespace-nowrap">
           Graph view
         </div>
       </Link>
-      <SimilaritySlider></SimilaritySlider>
-      <div className="ml-auto mr-4" style={{ display: "flex" }}>
-        <div className="mr-4">
+      <div className="hidden lg:block flex-shrink-0">
+        <SimilaritySlider></SimilaritySlider>
+      </div>
+      <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+        <div className="hidden xl:flex gap-2">
           <FirstDiff />
-        </div>
-        <div className="mr-4">
           <SecondDiff />
-        </div>
-        <div className="mr-6">
           <Suspense>
             <Diff />
           </Suspense>
         </div>
-        <div
-          className="ml-auto"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignContent: "center",
-            flexDirection: "column",
-          }}
-        >
+        <div className="hidden md:block text-sm whitespace-nowrap">
           Current: {currentTick}
         </div>
-        <div className="mx-6">
-          <DarkModeToggle />
-        </div>
+        <NoveltyModeToggle isNoveltyMode={isNoveltyMode} setIsNoveltyMode={setIsNoveltyMode} />
+        {isNoveltyMode && <FeelingLuckyButton isNoveltyMode={isNoveltyMode} />}
+        <DarkModeToggle />
         <ConfigButton />
         <LogoutButton />
       </div>

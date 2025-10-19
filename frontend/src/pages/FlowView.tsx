@@ -523,7 +523,7 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
                 className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-black dark:text-white"
               >
                 <option value="">Select a tag to add...</option>
-                {availableTags?.filter(t => !flow.tags.includes(t)).map(tag => (
+                {availableTags?.filter(t => !flow.tags.includes(t) && t !== "starred").map(tag => (
                   <option key={tag} value={tag}>{tag}</option>
                 ))}
               </select>

@@ -64,8 +64,10 @@
   align-items: center;
   height: 50px;
   @apply gap-3;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 0 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
 
   input {
     @apply flex bg-gray-200 dark:bg-gray-700 py-1 px-3 rounded-md text-gray-900 dark:text-gray-100;
@@ -81,19 +83,41 @@
 /* Responsive header for smaller screens */
 @media (max-width: 768px) {
   .header {
-    gap: 8px;
+    gap: 6px;
     padding: 0 4px;
   }
   
   .header input {
-    font-size: 14px;
-    min-width: 100px;
+    font-size: 13px;
+    min-width: 80px;
+    padding: 4px 8px;
+  }
+  
+  .header select {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+  
+  .header button {
+    font-size: 12px;
+    padding: 4px 8px;
   }
   
   .header .header-icon {
     padding-left: 8px;
     padding-right: 4px;
     font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .header {
+    gap: 8px;
+  }
+  
+  .header input {
+    font-size: 14px;
+    min-width: 120px;
   }
 }
 
