@@ -124,9 +124,14 @@ export function Config() {
       const result = await reloadServices().unwrap();
       setMessage({ 
         type: "success", 
-        text: result.message || "Services reloaded successfully"
+        text: result.message || "Services reloaded successfully. Refreshing page..."
       });
       refetch();
+      
+      // Refresh the page after a short delay to show the success message
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error: any) {
       setMessage({ type: "error", text: error?.data?.error || "Failed to reload services" });
     }
