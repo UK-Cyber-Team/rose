@@ -35,6 +35,7 @@ import {
   useCreateTagMutation,
   useAddTagToFlowMutation,
 } from "../api";
+import { FlowNotes } from "../components/FlowNotes";
 import { getTickStuff } from "../tick";
 import { toggleFilterFuzzyHashes, toggleFilterTag } from "../store/filter";
 import { useAppDispatch, useAppSelector } from "../store";
@@ -634,6 +635,9 @@ function FlowOverview({ flow }: { flow: FullFlow }) {
           </div>
         </div>
       </div>
+      
+      {/* Notes Section */}
+      <FlowNotes flowId={flow.id} />
     </div>
   );
 }

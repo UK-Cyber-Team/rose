@@ -433,6 +433,37 @@ def getFlowDetail(id):
     return return_json_response(flow)
 
 
+@application.route("/flow/<id>/notes")
+@requires_auth
+def getFlowNotes(id):
+    """Get notes for a specific flow"""
+    flow_id = uuid.UUID(id)
+    with db.connection() as c:
+        notes = c.flow_notes_get(flow_id)
+    return jsonify({"notes": notes})
+
+
+@application.route("/flow/<id>/notes", methods=["PUT"])
+@requires_auth
+def updateFlowNotes(id):
+    """Update notes for a specific flow"""
+    flow_id = uuid.UUID(id)
+    data = request.get_json()
+    notes = data.get("notes", "")
+    
+    # Validate notes length (optional, adjust as needed)
+    if len(notes) > 10000:
+        return jsonify({"error": "Notes too long (max 10000 characters)"}), 400
+    
+    with db.connection() as c:
+        success = c.flow_notes_update(flow_id, notes)
+    
+    if success:
+        return jsonify({"success": True, "notes": notes})
+    else:
+        return jsonify({"error": "Flow not found"}), 404
+
+
 @application.route("/flow/<id>/pcap")
 @requires_auth
 def getFlowPcap(id):
