@@ -253,12 +253,12 @@ export const tulipApi = createApi({
       invalidatesTags: ['Auth'],
     }),
     // Service configuration endpoints
-    getServicesConfig: builder.query<{ services: Service[]; vm_ip: string; available_decoders: string[] }, void>({
+    getServicesConfig: builder.query<{ services: Service[]; vm_ip: string }, void>({
       query: () => '/services/config',
     }),
     addService: builder.mutation<
       { success: boolean; service: Service },
-      { name: string; ip: string; port: number; decoders?: string[][] }
+      { name: string; ip: string; port: number }
     >({
       query: (service) => ({
         url: '/services/config',
@@ -270,16 +270,6 @@ export const tulipApi = createApi({
       query: (index) => ({
         url: `/services/config/${index}`,
         method: 'DELETE',
-      }),
-    }),
-    updateServiceDecoders: builder.mutation<
-      { success: boolean; service: Service },
-      { index: number; decoders: string[][] }
-    >({
-      query: ({ index, decoders }) => ({
-        url: `/services/config/${index}/decoders`,
-        method: 'PUT',
-        body: { decoders },
       }),
     }),
     reloadServices: builder.mutation<
@@ -336,7 +326,6 @@ export const {
   useGetServicesConfigQuery,
   useAddServiceMutation,
   useDeleteServiceMutation,
-  useUpdateServiceDecodersMutation,
   useReloadServicesMutation,
   useGetFlowNotesQuery,
   useUpdateFlowNotesMutation,
