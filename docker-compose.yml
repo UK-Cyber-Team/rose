@@ -48,6 +48,8 @@ services:
     volumes:
       - ${TRAFFIC_DIR_HOST}:${TRAFFIC_DIR_DOCKER}:ro,z
       - flask-sessions:/tmp/flask_sessions
+      - services-config:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       TIMESCALE: ${TIMESCALE}
       TULIP_TRAFFIC_DIR: ${TRAFFIC_DIR_DOCKER}
@@ -154,6 +156,7 @@ services:
 volumes:
   timescale-data:
   flask-sessions:
+  services-config:
 
 networks:
   internal:

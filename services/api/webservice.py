@@ -316,6 +316,185 @@ def getServices():
     return return_json_response(services)
 
 
+@application.route("/services/config")
+@requires_auth
+def getServicesConfig():
+    """Get service configuration including VM_IP for form defaults"""
+    from configurations import vm_ip, load_services
+    return jsonify({
+        'services': load_services(),
+        'vm_ip': vm_ip
+    })
+
+
+@application.route("/services/config", methods=["POST"])
+@requires_auth
+def addService():
+    """Add a new service to configuration"""
+    import ipaddress
+    from configurations import load_services, save_services
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    ip = data.get('ip', '').strip()
+    port = data.get('port')
+    
+    # Validation
+    if not name:
+        return jsonify({'error': 'Service name is required'}), 400
+    
+    if not ip:
+        return jsonify({'error': 'IP address is required'}), 400
+    
+    # Validate IP address (IPv4 or IPv6)
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        return jsonify({'error': 'Invalid IP address format'}), 400
+    
+    # Validate port
+    try:
+        port = int(port)
+        if port < 1 or port > 65535:
+            return jsonify({'error': 'Port must be between 1 and 65535'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid port number'}), 400
+    
+    # Load current services
+    current_services = load_services()
+    
+    # Check for duplicates
+    for service in current_services:
+        if service['name'] == name and service['ip'] == ip and service['port'] == port:
+            return jsonify({'error': 'Service already exists'}), 400
+    
+    # Add new service
+    new_service = {'name': name, 'ip': ip, 'port': port}
+    current_services.append(new_service)
+    
+    # Save services
+    if save_services(current_services):
+        return jsonify({'success': True, 'service': new_service})
+    else:
+        return jsonify({'error': 'Failed to save service configuration'}), 500
+
+
+@application.route("/services/config/<int:index>", methods=["DELETE"])
+@requires_auth
+def deleteService(index):
+    """Delete a service by index"""
+    from configurations import load_services, save_services
+    
+    current_services = load_services()
+    
+    if index < 0 or index >= len(current_services):
+        return jsonify({'error': 'Invalid service index'}), 400
+    
+    removed_service = current_services.pop(index)
+    
+    if save_services(current_services):
+        return jsonify({'success': True, 'removed': removed_service})
+    else:
+        return jsonify({'error': 'Failed to save service configuration'}), 500
+
+
+@application.route("/services/reload", methods=["POST"])
+@requires_auth
+def reloadServices():
+    """Reload services configuration and trigger docker-compose rebuild"""
+    import subprocess
+    from configurations import load_services
+    
+    # Reload services in memory
+    global services
+    services = load_services()
+    
+    try:
+        # Get the container ID
+        container_result = subprocess.run(
+            ['hostname'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        container_id = container_result.stdout.strip()
+        
+        # Get the project directory from docker inspect
+        inspect_result = subprocess.run(
+            ['docker', 'inspect', container_id, '--format', '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        project_dir = inspect_result.stdout.strip()
+        
+        if not project_dir or inspect_result.returncode != 0:
+            # Fallback: Try to find docker-compose.yml in common locations
+            project_dir = None
+            for potential_dir in ['/tulip', '/workspace', '/app']:
+                test_result = subprocess.run(
+                    ['docker', 'run', '--rm', '-v', f'{potential_dir}:/check:ro', 'alpine', 'test', '-f', '/check/docker-compose.yml'],
+                    capture_output=True,
+                    timeout=5
+                )
+                if test_result.returncode == 0:
+                    project_dir = potential_dir
+                    break
+        
+        if not project_dir:
+            return jsonify({
+                'success': True,
+                'warning': 'Services reloaded in memory. Please manually run: docker compose up --build -d api',
+                'services_count': len(services)
+            })
+        
+        # Get project name
+        project_name_result = subprocess.run(
+            ['docker', 'inspect', container_id, '--format', '{{index .Config.Labels "com.docker.compose.project"}}'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        project_name = project_name_result.stdout.strip() or 'tulip'
+        
+        # Trigger docker-compose rebuild for API service
+        result = subprocess.run(
+            ['docker', 'compose', '-f', f'{project_dir}/docker-compose.yml', '-p', project_name, 'up', '--build', '-d', 'api'],
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Services reloaded and API container rebuild initiated',
+                'services_count': len(services)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Docker compose rebuild failed',
+                'stderr': result.stderr,
+                'manual_command': f'cd {project_dir} && docker compose up --build -d api'
+            }), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Docker compose rebuild timed out'}), 500
+    except FileNotFoundError as e:
+        return jsonify({
+            'success': True,
+            'warning': f'Services reloaded in memory. Docker CLI not available ({str(e)}). Please manually run: docker compose up --build -d api',
+            'services_count': len(services)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': True,
+            'warning': f'Services reloaded in memory. Auto-rebuild failed ({str(e)}). Please manually run: docker compose up --build -d api',
+            'services_count': len(services)
+        })
+
+
 @application.route("/flag_regex")
 @requires_auth
 def getFlagRegex():

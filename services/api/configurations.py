@@ -23,6 +23,7 @@
 # along with Flower.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import json
 from pathlib import Path
 
 traffic_dir = Path(os.getenv("TULIP_TRAFFIC_DIR", "/traffic"))
@@ -35,6 +36,10 @@ vm_ip = os.getenv("VM_IP", "10.10.3.1")
 visualizer_url = os.getenv("VISUALIZER_URL", "http://127.0.0.1:1337")
 auth_password = os.getenv("AUTH_PASSWORD", "")
 
+# Service configuration file path
+services_config_file = Path("/data/services_config.json")
+
+# Default services (fallback if config file doesn't exist)
 vm_ip_1 = "10.60.2.1"
 helper = '''
 10.61.5.1:1237 CyberUni 4
@@ -47,5 +52,28 @@ helper = '''
 10.63.5.1:1337 RPN
 '''
 
-services = [{"ip": x.split(" ")[0].split(":")[0], "port": int(x.split(" ")[0].split(":")[1]), "name": " ".join(x.split(" ")[1:])} for x in helper.strip().split("\n")]
-services += [{"ip": vm_ip_1, "port": -1, "name": "other"}]
+default_services = [{"ip": x.split(" ")[0].split(":")[0], "port": int(x.split(" ")[0].split(":")[1]), "name": " ".join(x.split(" ")[1:])} for x in helper.strip().split("\n")]
+default_services += [{"ip": vm_ip_1, "port": -1, "name": "other"}]
+
+def load_services():
+    """Load services from config file, or use defaults if file doesn't exist."""
+    try:
+        if services_config_file.exists():
+            with open(services_config_file, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading services config: {e}")
+    return default_services
+
+def save_services(services_list):
+    """Save services to config file."""
+    try:
+        services_config_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(services_config_file, 'w') as f:
+            json.dump(services_list, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving services config: {e}")
+        return False
+
+services = load_services()

@@ -252,6 +252,35 @@ export const tulipApi = createApi({
       }),
       invalidatesTags: ['Auth'],
     }),
+    // Service configuration endpoints
+    getServicesConfig: builder.query<{ services: Service[]; vm_ip: string }, void>({
+      query: () => '/services/config',
+    }),
+    addService: builder.mutation<
+      { success: boolean; service: Service },
+      { name: string; ip: string; port: number }
+    >({
+      query: (service) => ({
+        url: '/services/config',
+        method: 'POST',
+        body: service,
+      }),
+    }),
+    deleteService: builder.mutation<{ success: boolean; removed: Service }, number>({
+      query: (index) => ({
+        url: `/services/config/${index}`,
+        method: 'DELETE',
+      }),
+    }),
+    reloadServices: builder.mutation<
+      { success: boolean; message?: string; warning?: string; services_count?: number },
+      void
+    >({
+      query: () => ({
+        url: '/services/reload',
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
@@ -274,4 +303,8 @@ export const {
   useCheckAuthStatusQuery,
   useLoginMutation,
   useLogoutMutation,
+  useGetServicesConfigQuery,
+  useAddServiceMutation,
+  useDeleteServiceMutation,
+  useReloadServicesMutation,
 } = tulipApi;

@@ -24,11 +24,30 @@ import {
   useGetFlowQuery,
   useGetServicesQuery,
   useLogoutMutation,
+  useCheckAuthStatusQuery,
 } from "../api";
 import { useAppSelector, useAppDispatch } from "../store";
 import { logout } from "../store/auth";
 import { getTickStuff } from "../tick";
 import { DarkModeToggle } from "./DarkModeToggle";
+
+function ConfigButton() {
+  const { data: authStatus } = useCheckAuthStatusQuery();
+  let [searchParams] = useSearchParams();
+
+  // Only show config button if user is authenticated
+  if (authStatus?.auth_required && !authStatus?.authenticated) {
+    return null;
+  }
+
+  return (
+    <Link to={`/config?${searchParams}`}>
+      <button className="bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-gray-800 dark:text-purple-100 rounded-md px-2 py-1 text-sm">
+        Config
+      </button>
+    </Link>
+  );
+}
 
 function LogoutButton() {
   const dispatch = useAppDispatch();
@@ -344,20 +363,6 @@ export function Header() {
           <ServiceSelection></ServiceSelection>
         </Suspense>
       </div>
-      <div>
-        <StartDateSelection></StartDateSelection>
-      </div>
-      <div>
-        <EndDateSelection></EndDateSelection>
-      </div>
-      <div>
-        <button
-          className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-700 dark:hover:bg-amber-600 text-gray-800 dark:text-amber-100 rounded-md px-2 py-1"
-          onClick={() => setToLastnTicks(5)}
-        >
-          Last 5 ticks
-        </button>
-      </div>
       <Link to={`/corrie?${searchParams}`}>
         <div className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1">
           Graph view
@@ -390,6 +395,7 @@ export function Header() {
         <div className="mx-6">
           <DarkModeToggle />
         </div>
+        <ConfigButton />
         <LogoutButton />
       </div>
     </>

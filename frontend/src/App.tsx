@@ -9,6 +9,7 @@ import { FlowList } from "./components/FlowList";
 import { FlowView } from "./pages/FlowView";
 import { DiffView } from "./pages/DiffView";
 import { Corrie } from "./components/Corrie";
+import { Config } from "./pages/Config";
 import { AuthWrapper } from "./components/AuthWrapper";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import notFoundImage from "./404.png";
@@ -43,6 +44,14 @@ function App() {
               element={
                 <Suspense>
                   <Corrie />
+                </Suspense>
+              }
+            />
+            <Route
+              path="config"
+              element={
+                <Suspense>
+                  <Config />
                 </Suspense>
               }
             />
