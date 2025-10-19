@@ -40,6 +40,7 @@ export const tulipApi = createApi({
     }),
     getFlow: builder.query<FullFlow, string>({
       query: (id) => `/flow/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Flow', id }],
       transformResponse: (flow: any): FullFlow => {
         const representations: any = {};
 
@@ -128,6 +129,7 @@ export const tulipApi = createApi({
     }),
     getTags: builder.query<string[], void>({
       query: () => `/tags`,
+      providesTags: ['Tag'],
     }),
     getTickInfo: builder.query<TickInfo, void>({
       query: () => `/tick_info`,
