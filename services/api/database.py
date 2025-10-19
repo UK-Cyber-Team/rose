@@ -60,6 +60,7 @@ class Flow:
     flagids: list[str]
     rank: int = 0
     fuzzy_hash: str
+    notes: str = ""
 
 
 @dataclass(slots=True, kw_only=True)
@@ -369,3 +370,31 @@ class Connection(psycopg.Connection):
         """
         self.execute(sql_query, {"tag_name": tag_name})
         return True
+
+    def flow_notes_get(self, flow_id: uuid.UUID) -> str:
+        """
+        Get notes for a specific flow.
+        Returns the notes text or empty string if flow doesn't exist.
+        """
+        sql_query = """
+            SELECT notes
+            FROM flow
+            WHERE id = %(flow_id)s
+        """
+        with self.cursor(row_factory=dict_row) as cursor:
+            result = cursor.execute(sql_query, {"flow_id": flow_id}).fetchone()
+            return result["notes"] if result else ""
+
+    def flow_notes_update(self, flow_id: uuid.UUID, notes: str) -> bool:
+        """
+        Update notes for a specific flow.
+        Returns True if successful, False if flow doesn't exist.
+        """
+        sql_query = """
+            UPDATE flow
+            SET notes = %(notes)s
+            WHERE id = %(flow_id)s
+        """
+        with self.cursor() as cursor:
+            cursor.execute(sql_query, {"flow_id": flow_id, "notes": notes})
+            return cursor.rowcount > 0

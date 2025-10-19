@@ -281,6 +281,22 @@ export const tulipApi = createApi({
         method: 'POST',
       }),
     }),
+    // Flow notes endpoints
+    getFlowNotes: builder.query<{ notes: string }, string>({
+      query: (flowId) => `/flow/${flowId}/notes`,
+      providesTags: (result, error, flowId) => [{ type: 'Flow', id: `${flowId}-notes` }],
+    }),
+    updateFlowNotes: builder.mutation<
+      { success: boolean; notes: string },
+      { flowId: string; notes: string }
+    >({
+      query: ({ flowId, notes }) => ({
+        url: `/flow/${flowId}/notes`,
+        method: 'PUT',
+        body: { notes },
+      }),
+      invalidatesTags: (result, error, { flowId }) => [{ type: 'Flow', id: `${flowId}-notes` }],
+    }),
   }),
 });
 
@@ -307,4 +323,6 @@ export const {
   useAddServiceMutation,
   useDeleteServiceMutation,
   useReloadServicesMutation,
+  useGetFlowNotesQuery,
+  useUpdateFlowNotesMutation,
 } = tulipApi;
