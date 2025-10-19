@@ -346,9 +346,9 @@ function NoveltyModeToggle({ isNoveltyMode, setIsNoveltyMode }: { isNoveltyMode:
     <button
       onClick={() => setIsNoveltyMode(!isNoveltyMode)}
       className="text-2xl md:text-3xl hover:scale-110 transition-transform flex-shrink-0"
-      title={isNoveltyMode ? "Novelty Mode (Click for Business Mode)" : "Business Mode (Click for Novelty Mode)"}
+      title={isNoveltyMode ? "Business Mode (Click for Novelty Mode)" : "Novelty Mode (Click for Business Mode)"}
     >
-      {isNoveltyMode ? "🤡" : "💼"}
+      {isNoveltyMode ? "💼" : "🤡"}
     </button>
   );
 }
