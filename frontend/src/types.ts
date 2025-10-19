@@ -94,6 +94,7 @@ export type Service = {
   ip: string;
   port: number;
   name: string;
+  decoders?: string[][];  // Array of decoder stages
 };
 
 export type TicksAttackInfo = Record<number, Record<string, number>>;

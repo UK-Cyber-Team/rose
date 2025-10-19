@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useGetServicesConfigQuery,
   useAddServiceMutation,
   useDeleteServiceMutation,
+  useUpdateServiceDecodersMutation,
   useReloadServicesMutation,
   useCheckAuthStatusQuery,
 } from "../api";
@@ -12,6 +13,7 @@ interface Service {
   name: string;
   ip: string;
   port: number;
+  decoders?: string[][];
 }
 
 export function Config() {
@@ -20,12 +22,17 @@ export function Config() {
   const { data: configData, isLoading, error, refetch } = useGetServicesConfigQuery();
   const [addService, { isLoading: isAdding }] = useAddServiceMutation();
   const [deleteService, { isLoading: isDeleting }] = useDeleteServiceMutation();
+  const [updateDecoders] = useUpdateServiceDecodersMutation();
   const [reloadServices, { isLoading: isReloading }] = useReloadServicesMutation();
 
   const [name, setName] = useState("");
   const [ip, setIp] = useState("");
   const [port, setPort] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // Decoder state
+  const [expandedService, setExpandedService] = useState<number | null>(null);
+  const [editingDecoders, setEditingDecoders] = useState<{ [key: number]: string[][] }>({});
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -134,6 +141,73 @@ export function Config() {
       }, 1500);
     } catch (error: any) {
       setMessage({ type: "error", text: error?.data?.error || "Failed to reload services" });
+    }
+  };
+
+  // Decoder handlers
+  const toggleDecoderEdit = (index: number, service: Service) => {
+    if (expandedService === index) {
+      setExpandedService(null);
+      setEditingDecoders((prev) => {
+        const { [index]: _, ...rest } = prev;
+        return rest;
+      });
+    } else {
+      setExpandedService(index);
+      setEditingDecoders((prev) => ({
+        ...prev,
+        [index]: service.decoders || [[]],
+      }));
+    }
+  };
+
+  const addDecoderStage = (serviceIndex: number) => {
+    setEditingDecoders((prev) => ({
+      ...prev,
+      [serviceIndex]: [...(prev[serviceIndex] || [[]]), []],
+    }));
+  };
+
+  const removeDecoderStage = (serviceIndex: number, stageIndex: number) => {
+    setEditingDecoders((prev) => ({
+      ...prev,
+      [serviceIndex]: prev[serviceIndex].filter((_, i) => i !== stageIndex),
+    }));
+  };
+
+  const toggleDecoderInStage = (serviceIndex: number, stageIndex: number, decoder: string) => {
+    setEditingDecoders((prev) => {
+      const stages = [...prev[serviceIndex]];
+      const stage = [...stages[stageIndex]];
+      const idx = stage.indexOf(decoder);
+      
+      if (idx > -1) {
+        stage.splice(idx, 1);
+      } else {
+        stage.push(decoder);
+      }
+      
+      stages[stageIndex] = stage;
+      return { ...prev, [serviceIndex]: stages };
+    });
+  };
+
+  const saveDecoders = async (serviceIndex: number) => {
+    try {
+      await updateDecoders({
+        index: serviceIndex,
+        decoders: editingDecoders[serviceIndex] || [[]],
+      }).unwrap();
+      
+      setMessage({ type: "success", text: "Decoders updated successfully" });
+      setExpandedService(null);
+      setEditingDecoders((prev) => {
+        const { [serviceIndex]: _, ...rest } = prev;
+        return rest;
+      });
+      refetch();
+    } catch (error: any) {
+      setMessage({ type: "error", text: error?.data?.error || "Failed to update decoders" });
     }
   };
 
@@ -248,25 +322,101 @@ export function Config() {
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-semibold">Name</th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-semibold">IP Address</th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-semibold">Port</th>
+                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-semibold">Decoders</th>
                     <th className="text-center py-3 px-4 text-gray-900 dark:text-gray-100 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {configData.services.map((service: Service, index: number) => (
-                    <tr key={index} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
-                      <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{service.name}</td>
-                      <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-mono">{service.ip}</td>
-                      <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{service.port}</td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => handleDeleteService(index, service)}
-                          disabled={isDeleting}
-                          className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={index}>
+                      <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{service.name}</td>
+                        <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-mono">{service.ip}</td>
+                        <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{service.port}</td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => toggleDecoderEdit(index, service)}
+                            className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                          >
+                            {expandedService === index ? "▼ Hide" : "► Configure"} ({service.decoders?.filter(s => s.length > 0).length || 0} stages)
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            onClick={() => handleDeleteService(index, service)}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                      
+                      {/* Decoder configuration row */}
+                      {expandedService === index && (
+                        <tr className="bg-gray-100 dark:bg-gray-700">
+                          <td colSpan={5} className="p-4">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Decoder Pipeline Configuration</h3>
+                                <button
+                                  onClick={() => addDecoderStage(index)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm"
+                                >
+                                  + Add Stage
+                                </button>
+                              </div>
+                              
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Stages process sequentially. Multiple decoders in one stage run in parallel.
+                              </p>
+                              
+                              {editingDecoders[index]?.map((stage, stageIndex) => (
+                                <div key={stageIndex} className="border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-white dark:bg-gray-800">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">Stage {stageIndex + 1}</span>
+                                    <button
+                                      onClick={() => removeDecoderStage(index, stageIndex)}
+                                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+                                    >
+                                      Remove Stage
+                                    </button>
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {configData.available_decoders?.map((decoder) => (
+                                      <label key={decoder} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={stage.includes(decoder)}
+                                          onChange={() => toggleDecoderInStage(index, stageIndex, decoder)}
+                                          className="rounded border-gray-300 dark:border-gray-600"
+                                        />
+                                        <span className="text-sm text-gray-900 dark:text-gray-100">{decoder}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                              
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => toggleDecoderEdit(index, service)}
+                                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => saveDecoders(index)}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                                >
+                                  Save Decoders
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -280,6 +430,10 @@ export function Config() {
           <p className="text-sm text-blue-800 dark:text-blue-200">
             <strong>How it works:</strong> Changes are saved to a configuration file and become active immediately when you click "Apply Changes". 
             The configuration persists across container restarts automatically.
+          </p>
+          <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
+            <strong>Decoders:</strong> Configure decoder pipelines for each service. Stages run sequentially, multiple decoders in a stage run in parallel.
+            Available decoders: b64decode, hexdecode, dns, grpc, http2, http_gzip, protobuf, pwntools, pythonrequests, quic, tls, websockets.
           </p>
         </div>
       </div>

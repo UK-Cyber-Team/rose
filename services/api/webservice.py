@@ -320,10 +320,11 @@ def getServices():
 @requires_auth
 def getServicesConfig():
     """Get service configuration including VM_IP for form defaults"""
-    from configurations import vm_ip, load_services
+    from configurations import vm_ip, load_services, AVAILABLE_DECODERS
     return jsonify({
         'services': load_services(),
-        'vm_ip': vm_ip
+        'vm_ip': vm_ip,
+        'available_decoders': AVAILABLE_DECODERS
     })
 
 
@@ -338,6 +339,7 @@ def addService():
     name = data.get('name', '').strip()
     ip = data.get('ip', '').strip()
     port = data.get('port')
+    decoders = data.get('decoders', [[]])  # Default to empty decoder pipeline
     
     # Validation
     if not name:
@@ -369,7 +371,7 @@ def addService():
             return jsonify({'error': 'Service already exists'}), 400
     
     # Add new service
-    new_service = {'name': name, 'ip': ip, 'port': port}
+    new_service = {'name': name, 'ip': ip, 'port': port, 'decoders': decoders}
     current_services.append(new_service)
     
     # Save services
@@ -394,6 +396,29 @@ def deleteService(index):
     
     if save_services(current_services):
         return jsonify({'success': True, 'removed': removed_service})
+    else:
+        return jsonify({'error': 'Failed to save service configuration'}), 500
+
+
+@application.route("/services/config/<int:index>/decoders", methods=["PUT"])
+@requires_auth
+def updateServiceDecoders(index):
+    """Update decoders for a specific service"""
+    from configurations import load_services, save_services
+    
+    data = request.get_json()
+    decoders = data.get('decoders', [[]])
+    
+    current_services = load_services()
+    
+    if index < 0 or index >= len(current_services):
+        return jsonify({'error': 'Invalid service index'}), 400
+    
+    # Update decoders
+    current_services[index]['decoders'] = decoders
+    
+    if save_services(current_services):
+        return jsonify({'success': True, 'service': current_services[index]})
     else:
         return jsonify({'error': 'Failed to save service configuration'}), 500
 
