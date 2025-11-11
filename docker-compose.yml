@@ -78,27 +78,7 @@ services:
       VISUALIZER_URL: ${VISUALIZER_URL}
       DUMP_PCAPS: ${DUMP_PCAPS}
 
-  ecsc_flagids:
-    restart: unless-stopped
-    build:
-      context: services/ecsc_flagids
-    image: tulip-ecsc-flagids:latest
-    depends_on:
-      - timescale
-    networks:
-      - internal
-    environment:
-      enabled: ${ECSC_FLAGIDS_SCRAPE}
-      db: ${TIMESCALE}
-      scoreboard_attackinfo_url: ${FLAGID_ENDPOINT}
-      scoreboard_currentround_url: ${ECSC_CURRENTRROUND_URL}
-      teamid: ${TEAM_ID}
-      fetch_all_flagids_from_database_on_start: ${ECSC_FLAGIDS_FETCH_ALL_FLAGIDS_FROM_DATABASE_ON_START}
-      cache_path: /data/cache.json
-      game_starttime: ${TICK_START}
-      game_round_duration: ${TICK_LENGTH}
-    volumes:
-      - ./services/ecsc_flagids/data:/data:rw,z
+
 
   assembler:
     build:
