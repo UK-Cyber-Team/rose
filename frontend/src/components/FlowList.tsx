@@ -14,14 +14,14 @@ import {
   START_FILTER_KEY,
   END_FILTER_KEY,
   FLOW_LIST_REFETCH_INTERVAL_MS,
+  SIMILARITY_FILTER_KEY,
 } from "../const";
 import { useAppSelector, useAppDispatch } from "../store";
-import { toggleFilterTag, toggleTagIntersectMode } from "../store/filter";
+import { toggleFilterFuzzyHashes, toggleFilterTag, toggleTagIntersectMode } from "../store/filter";
 
 import { HeartIcon, FilterIcon, LinkIcon } from "@heroicons/react/solid";
 import { HeartIcon as EmptyHeartIcon } from "@heroicons/react/outline";
 
-import classes from "./FlowList.module.css";
 import { format } from "date-fns";
 import useDebounce from "../hooks/useDebounce";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
@@ -33,6 +33,13 @@ import {
   useGetTagsQuery,
   useStarFlowMutation,
 } from "../api";
+
+const flowItemBaseClasses =
+  "list-none rounded-md border border-transparent bg-gray-100 dark:bg-gray-800 p-2 text-gray-900 dark:text-gray-100 transition-colors duration-150 shadow-sm mb-1 last:mb-0";
+const flowItemHoverClasses =
+  "hover:bg-gray-200/70 dark:hover:bg-gray-700/70";
+const flowItemActiveClasses =
+  "border-l-4 border-gray-500 dark:border-gray-400 bg-gray-300/60 dark:bg-blue-900/70 shadow-md";
 
 export function FlowList() {
   let [searchParams] = useSearchParams();
@@ -49,6 +56,10 @@ export function FlowList() {
   const includeTags = useAppSelector((state) => state.filter.includeTags);
   const excludeTags = useAppSelector((state) => state.filter.excludeTags);
   const tagIntersectionMode = useAppSelector((state) => state.filter.tagIntersectionMode);
+  const includeFuzzyHashes = useAppSelector((state)=> state.filter.includeFuzzyHashes);
+  const excludeFuzzyHashes = useAppSelector((state)=> state.filter.excludeFuzzyHashes);
+  const fuzzyHashes = useAppSelector((state)=> state.filter.fuzzyHashes);
+  const fuzzyHashIds = useAppSelector((state)=> state.filter.fuzzyHashIds);
 
   const dispatch = useAppDispatch();
 
@@ -64,6 +75,7 @@ export function FlowList() {
   const text_filter = searchParams.get(TEXT_FILTER_KEY) ?? undefined;
   const from_filter = searchParams.get(START_FILTER_KEY) ?? undefined;
   const to_filter = searchParams.get(END_FILTER_KEY) ?? undefined;
+  const similarity = searchParams.get(SIMILARITY_FILTER_KEY) ?? undefined;
 
   const debounced_text_filter = useDebounce(text_filter, 300);
 
@@ -81,6 +93,9 @@ export function FlowList() {
       tags_include: includeTags,
       tags_exclude: excludeTags,
       tag_intersection_mode: tagIntersectionMode,
+      similarity: parseInt(similarity ?? "90"),
+      includeFuzzyHashes: includeFuzzyHashes,
+      excludeFuzzyHashes: excludeFuzzyHashes,
       flags: filterFlags,
       flagids: filterFlagids,
     },
@@ -183,58 +198,78 @@ export function FlowList() {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-white border-b-gray-300 border-b shadow-md flex flex-col">
+    <div className="flex flex-col h-full bg-transparent">
+      <div className="bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex" style={{ height: 50 }}>
           <button
-            className="flex gap-1 items-center text-sm"
+            className="flex gap-1 items-center text-sm text-gray-900 dark:text-gray-100"
             onClick={() => setShowFilters(!showFilters)}
           >
-            {<FilterIcon height={20} className="text-gray-400"></FilterIcon>}
+            {<FilterIcon height={20} className="text-gray-400 dark:text-gray-300"></FilterIcon>}
             {showFilters ? "Close" : "Open"} filters
           </button>
           {/* Maybe we want to use a search button instead of live search */}
           {false && (
-            <button className="ml-auto items-center bg-blue-600 text-white px-2 rounded-md text-sm">
+            <button className="ml-auto items-center bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-2 rounded-md text-sm">
               Search
             </button>
           )}
         </div>
         {showFilters && (
-          <div className="border-t-gray-300 border-t p-2">
-            <div className="flex">
-              <p className="text-sm font-bold text-gray-600 pb-2">
-                Intersection filter
-              </p>
-              <button
-                className="w-24 h-5 bg-blue-100 text-sm rounded-md ml-auto"
-                onClick={() => dispatch(toggleTagIntersectMode())}
-              >
-                Mode:&nbsp;{tagIntersectionMode}
-              </button>
+          <div>
+            <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
+              <div className="flex">
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
+                  Intersection filter
+                </p>
+                <button
+                  className="w-24 h-5 bg-blue-100 dark:bg-blue-800/50 text-gray-900 dark:text-gray-100 text-sm rounded-md ml-auto"
+                  onClick={() => dispatch(toggleTagIntersectMode())}
+                >
+                  Mode:&nbsp;{tagIntersectionMode}
+                </button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {(availableTags ?? []).map((tag) => (
+                  <Tag
+                    key={tag}
+                    tag={tag}
+                    disabled={!includeTags.includes(tag)}
+                    excluded={excludeTags.includes(tag)}
+                    onClick={() => dispatch(toggleFilterTag(tag))}
+                  ></Tag>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {(availableTags ?? []).map((tag) => (
-                <Tag
-                  key={tag}
-                  tag={tag}
-                  disabled={!includeTags.includes(tag)}
-                  excluded={excludeTags.includes(tag)}
-                  onClick={() => dispatch(toggleFilterTag(tag))}
-                ></Tag>
-              ))}
+            <div className="border-t-gray-300 dark:border-t-gray-600 border-t p-2">
+              <div className="flex">
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-300 pb-2">
+                  Similarity filter
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {(fuzzyHashes ?? []).map((fuzzyHash, i) => (
+                    <Tag
+                      key={fuzzyHashIds[i]}
+                      tag={fuzzyHashIds[i]}
+                      disabled={!includeFuzzyHashes.includes(fuzzyHash)}
+                      excluded={excludeFuzzyHashes.includes(fuzzyHash)}
+                      onClick={() => dispatch(toggleFilterFuzzyHashes([fuzzyHash, fuzzyHashIds[i]]))}
+                    ></Tag>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+	  </div>
         )}
       </div>
       <div></div>
-      { searchMessage && <div>{searchMessage}</div> }
+      { searchMessage && <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-2 border-b border-blue-200 dark:border-blue-800">{searchMessage}</div> }
       <Virtuoso
-        className={classNames({
-          "flex-1": true,
-          [classes.list_container]: true,
-          "sidebar-loading": isLoading,
-        })}
+        className={classNames(
+          "flex-1 flex flex-col gap-1 px-1 pt-1 overflow-y-auto",
+          { "sidebar-loading": isLoading },
+        )}
+        style={{ backgroundColor: 'transparent' }}
         data={transformedFlowData}
         ref={virtuoso}
         initialTopMostItemIndex={flowIndex}
@@ -243,7 +278,8 @@ export function FlowList() {
             to={`/flow/${flow.id}?${searchParams}`}
             onClick={() => setFlowIndex(index)}
             key={flow.id}
-            className="focus-visible:rounded-md"
+            className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400 rounded-md"
+            aria-current={flow.id === openedFlowID ? "location" : undefined}
             //style={{ paddingTop: '1em' }}
           >
             <FlowListEntry
@@ -276,15 +312,20 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
 
   const duration =
     flow.duration > 10000 ? (
-      <div className="text-red-500">&gt;10s</div>
+      <div className="text-red-500 dark:text-red-400">&gt;10s</div>
     ) : (
-      <div>{flow.duration}ms</div>
+      <div className="text-gray-700 dark:text-gray-200">{flow.duration}ms</div>
     );
   return (
-    <li
-      className={classNames({
-        [classes.active]: isActive,
-      })}
+    <article
+      role="listitem"
+      className={classNames(
+        flowItemBaseClasses,
+        flowItemHoverClasses,
+        {
+          [flowItemActiveClasses]: isActive,
+        }
+      )}
     >
       <div className="flex">
         <div
@@ -297,38 +338,38 @@ function FlowListEntry({ flow, isActive, onHeartClick }: FlowListEntryProps) {
           {isStarred ? (
             <HeartIcon className="text-red-500" />
           ) : (
-            <EmptyHeartIcon />
+            <EmptyHeartIcon className="text-gray-400 dark:text-gray-500" />
           )}
         </div>
 
         <div className="w-5 mr-2 self-center shrink-0">
           {flow.child_id != null || flow.parent_id != null ? (
-            <LinkIcon className="text-blue-500" />
+            <LinkIcon className="text-blue-500 dark:text-blue-400" />
           ) : undefined}
         </div>
         <div className="flex-1 shrink">
           <div className="flex">
             <div className="shrink-0">
-              <span className="text-gray-700 font-bold overflow-ellipsis overflow-hidden ">
+              <span className="text-gray-700 dark:text-gray-200 font-bold overflow-ellipsis overflow-hidden ">
                 {flow.service_tag}
               </span>
-              <span className="text-gray-500">:{flow.dst_port}</span>
+              <span className="text-gray-500 dark:text-gray-400">:{flow.dst_port}</span>
             </div>
 
             <div className="ml-2">
-              <span className="text-gray-500">{formatted_time_h_m_s}</span>
-              <span className="text-gray-300">{formatted_time_ms}</span>
+              <span className="text-gray-500 dark:text-gray-400">{formatted_time_h_m_s}</span>
+              <span className="text-gray-400 dark:text-gray-500">{formatted_time_ms}</span>
             </div>
-            <div className="text-gray-500 ml-auto">{duration}</div>
+            <div className="text-gray-500 dark:text-gray-400 ml-auto">{duration}</div>
           </div>
           <div className="flex gap-2 flex-wrap">
             {filtered_tag_list.map((tag) => (
-              <Tag key={tag} tag={tag}></Tag>
+              <Tag key={tag} tag={tag} count={tag === "flag-in" ? flow.flags_in : (tag === "flag-out" ? flow.flags_out : 0)}></Tag>
             ))}
           </div>
         </div>
       </div>
-    </li>
+    </article>
   );
 }
 

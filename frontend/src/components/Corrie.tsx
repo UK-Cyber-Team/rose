@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import { Flow, Stats, TicksAttackInfo } from "../types";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import {
   SERVICE_FILTER_KEY,
   TEXT_FILTER_KEY,
@@ -9,6 +10,7 @@ import {
   CORRELATION_MODE_KEY,
   FLOW_LIST_REFETCH_INTERVAL_MS,
   UNDER_ATTACK_REFETCH_INTERVAL_MS,
+  SIMILARITY_FILTER_KEY,
 } from "../const";
 import useDebounce from "../hooks/useDebounce";
 
@@ -43,12 +45,15 @@ interface GraphProps {
 }
 
 export const Corrie = () => {
+  const { isDarkMode } = useDarkMode();
   const { data: services } = useGetServicesQuery();
   const includeTags = useAppSelector((state) => state.filter.includeTags);
   const excludeTags = useAppSelector((state) => state.filter.excludeTags);
   const filterFlags = useAppSelector((state) => state.filter.filterFlags);
   const filterFlagids = useAppSelector((state) => state.filter.filterFlagids);
   const tagIntersectionMode = useAppSelector((state) => state.filter.tagIntersectionMode);
+  const includeFuzzyHashes = useAppSelector((state) => state.filter.includeFuzzyHashes);
+  const excludeFuzzyHashes = useAppSelector((state) => state.filter.excludeFuzzyHashes);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -58,6 +63,7 @@ export const Corrie = () => {
   const text_filter = searchParams.get(TEXT_FILTER_KEY) ?? undefined;
   const from_filter = searchParams.get(START_FILTER_KEY) ?? undefined;
   const to_filter = searchParams.get(END_FILTER_KEY) ?? undefined;
+  const similarity = searchParams.get(SIMILARITY_FILTER_KEY) ?? undefined;
 
   const debounced_text_filter = useDebounce(text_filter, 300);
 
@@ -67,8 +73,8 @@ export const Corrie = () => {
     setSearchParams(searchParams);
   };
 
-  const inactiveButtonClass = "bg-blue-100 text-gray-800 rounded-md px-2 py-1";
-  const activeButtonClass = `${inactiveButtonClass} ring-2 ring-gray-500`;
+  const inactiveButtonClass = "bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-gray-800 dark:text-blue-100 rounded-md px-2 py-1";
+  const activeButtonClass = `${inactiveButtonClass} ring-2 ring-gray-500 dark:ring-gray-400`;
 
   const navigate = useNavigate();
   const onClickNavigate = useCallback(
@@ -109,6 +115,9 @@ export const Corrie = () => {
       tag_intersection_mode: tagIntersectionMode,
       flags: filterFlags,
       flagids: filterFlagids,
+      similarity: parseInt(similarity ?? "90"),
+      includeFuzzyHashes: includeFuzzyHashes,
+      excludeFuzzyHashes: excludeFuzzyHashes,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -149,9 +158,9 @@ export const Corrie = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="text-sm bg-white border-b-gray-300 border-b shadow-md flex flex-col">
+      <div className="text-sm bg-white dark:bg-gray-800 border-b-gray-300 dark:border-b-gray-600 border-b shadow-md flex flex-col">
         <div className="p-2 flex space-x-2" style={{ height: 50 }}>
-          <a className="text-center px-2 py-2">Correlation mode: </a>
+          <a className="text-center px-2 py-2 text-gray-900 dark:text-gray-100">Correlation mode: </a>
           <button
             className={mode == "time" ? activeButtonClass : inactiveButtonClass}
             onClick={() => setCorrelationMode("time")}
@@ -195,14 +204,14 @@ export const Corrie = () => {
       <div className="flex-1 w-full overflow-hidden p-4">
         {(mode == "packets" || mode == "time") && TimePacketGraph(graphProps)}
         {mode == "volume" && VolumeGraph(graphProps)}
-        {(mode == "tags" || mode == "flags") && BarPerTickGraph(graphProps, mode)}
+        {(mode == "tags" || mode == "flags") && BarPerTickGraph(graphProps, mode, isDarkMode)}
         {(mode == "under-attack") && UnderAttackGraph(graphProps)}
       </div>
     </div>
   );
 };
 
-function BarPerTickGraph(graphProps: GraphProps, mode: string) {
+function BarPerTickGraph(graphProps: GraphProps, mode: string, isDarkMode: boolean) {
   const statsList = graphProps.statsList;
   const searchParams = graphProps.searchParams;
   const setSearchParams = graphProps.setSearchParams;
@@ -288,14 +297,14 @@ function BarPerTickGraph(graphProps: GraphProps, mode: string) {
   let series: ApexAxisChartSeries = [];
 
   const colors: any = {
-    "tag_flag_in": tagToColor("flag-in"),
-    "tag_flag_out": tagToColor("flag-out"),
-    "tag_enemy": tagToColor("enemy"),
-    "tag_blocked": tagToColor("blocked"),
-    "tag_suricata": tagToColor("suricata"),
+    "tag_flag_in": tagToColor("flag-in", isDarkMode),
+    "tag_flag_out": tagToColor("flag-out", isDarkMode),
+    "tag_enemy": tagToColor("enemy", isDarkMode),
+    "tag_blocked": tagToColor("blocked", isDarkMode),
+    "tag_suricata": tagToColor("suricata", isDarkMode),
 
-    "flag_in": tagToColor("flag-in"),
-    "flag_out": tagToColor("flag-out"),
+    "flag_in": tagToColor("flag-in", isDarkMode),
+    "flag_out": tagToColor("flag-out", isDarkMode),
   };
 
   Object.keys(colors).forEach(t => {

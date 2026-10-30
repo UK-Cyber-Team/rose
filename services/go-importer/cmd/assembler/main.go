@@ -2,9 +2,11 @@ package main
 
 import (
 	"go-importer/internal/converters"
+	"go-importer/internal/pcapwatch"
 	"go-importer/internal/pkg/db"
-	"io/ioutil"
 	"runtime"
+
+	"github.com/chikamim/nilsimsa"
 
 	"github.com/gammazero/workerpool"
 
@@ -21,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
 	"github.com/google/gopacket/ip4defrag"
@@ -126,6 +127,14 @@ func reassemblyCallback(entry db.FlowEntry) {
 			}
 			ApplyFlagids(&entry, flagids)
 		}
+
+		allData := make([]byte, 0)
+		for idx := 0; idx < len(entry.Flow); idx++ {
+			flowItem := entry.Flow[idx]
+			allData = append(allData[:], []byte(flowItem.Data)[:]...)
+		}
+		fuzzyHash := nilsimsa.HexSum(allData)
+		entry.Fuzzy_hash = fuzzyHash
 
 		// Finally, insert the new entry
 		g_db.FlowInsert(entry)
@@ -251,7 +260,7 @@ func main() {
 			log.Fatal("Invalid start time: ", err)
 		}
 		flagTickStart = startTime
-	} 
+	}
 
 	if concurrentFlows == nil || *concurrentFlows == 0 {
 		*concurrentFlows = runtime.NumCPU() / 2
@@ -302,7 +311,7 @@ func main() {
 		}
 		*flagValidatorTeam = parsed
 	}
-	
+
 	// Flag validator setup
 	if *flagValidatorType != "" && *flag_regex == "" {
 		log.Println("WARNING: Flag validation enabled but no flag regex specified. No flag validation will be done.")
@@ -330,14 +339,13 @@ func main() {
 			time.Duration(*ticklength) * time.Second,
 		}
 	case "":
-		if *flagValidatorTeam != -1  {
+		if *flagValidatorTeam != -1 {
 			log.Println("WARNING: No flag validator type specified but additional flag validator options are set. No flag validation will be done.")
 		}
 		flagValidator = &DummyFlagValidator{}
 	default:
 		log.Fatalln("Uknown -flag-validator-type: ", *flagValidatorType)
 	}
-
 
 	log.Println("Connecting to Timescale:", *timescale)
 	g_db = db.NewDatabase(*timescale)
@@ -468,70 +476,39 @@ func connectToPCAPOverIP(service *AssemblerService, pcapIP string) {
 }
 
 func (service *AssemblerService) WatchDir(watch_dir string) {
-	stat, err := os.Stat(watch_dir)
-	if err != nil {
-		log.Fatal("Failed to open the watch_dir with error: ", err)
-	}
-
-	if !stat.IsDir() {
-		log.Fatal("watch_dir is not a directory")
-	}
-
-	log.Println("Monitoring dir: ", watch_dir)
-
-	files, err := ioutil.ReadDir(watch_dir)
+	watcher, err := pcapwatch.New(service.HandlePcapUri)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	for _, file := range files {
-		// accepts files with prefixes that start with .pcap (.pcapng .pcap1 etc)
-		if strings.HasPrefix(filepath.Ext(file.Name()), ".pcap") {
-			service.HandlePcapUri(filepath.Join(watch_dir, file.Name())) //FIXME; this is a little clunky
-		}
-	}
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	defer watcher.Close()
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
-	// Keep running until Interrupt
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				if event.Op&(fsnotify.Rename|fsnotify.Create|fsnotify.Write) != 0 {
-					// accepts files with prefixes that start with .pcap (.pcapng .pcap1 etc)
-					if strings.HasPrefix(filepath.Ext(event.Name), ".pcap") {
-						log.Println("Found new file", event.Name, event.Op.String())
-						time.Sleep(2 * time.Second) // FIXME; bit of race here between file creation and writes.
-						service.HandlePcapUri(event.Name)
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("watcher error:", err)
-			}
-		}
-	}()
+	defer signal.Stop(signalChan)
 
-	err = watcher.Add(watch_dir)
-	if err != nil {
+	log.Println("Monitoring dir: ", watch_dir)
+	if err := watcher.Add(watch_dir); err != nil {
 		log.Fatal(err)
 	}
-	<-signalChan
-	log.Println("Watcher stopped")
-
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			if err := watcher.Handle(event); err != nil {
+				log.Println("Failed to handle capture event:", err)
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("watcher error:", err)
+		case <-signalChan:
+			log.Println("Watcher stopped")
+			return
+		}
+	}
 }
 
 func (service *AssemblerService) HandlePcapUri(sourceName string) {
@@ -579,7 +556,6 @@ func (service *AssemblerService) ProcessPcapHandle(handle *pcap.Handle, sourceNa
 	switch linktype {
 	case layers.LinkTypeIPv4:
 		source = gopacket.NewPacketSource(handle, layers.LayerTypeIPv4)
-		break
 	default:
 		source = gopacket.NewPacketSource(handle, linktype)
 	}
@@ -601,14 +577,14 @@ func (service *AssemblerService) ProcessPcapHandle(handle *pcap.Handle, sourceNa
 		// NOTE: PCAP-over-IP: pcapOpenOfflineFile is blocking so we need at least see some packets passing by to get here.
 		if service.FlushInterval != 0 && lastFlush.Add(service.FlushInterval).Unix() < time.Now().Unix() {
 			service.FlushConnections()
-			log.Println("Processed", count - pcap.Position, "packets from", sourceName, "(so far)")
+			log.Println("Processed", count-pcap.Position, "packets from", sourceName, "(so far)")
 			lastFlush = time.Now()
 		}
 
 		count++
 
 		// Skip packets that were already processed from this pcap
-		if count < pcap.Position + 1 {
+		if count < pcap.Position+1 {
 			continue
 		}
 
@@ -658,7 +634,7 @@ func (service *AssemblerService) ProcessPcapHandle(handle *pcap.Handle, sourceNa
 			tcp := transport.(*layers.TCP)
 			flow := packet.NetworkLayer().NetworkFlow()
 			captureInfo := packet.Metadata().CaptureInfo
-			captureInfo.AncillaryData = []interface{}{flowSourceName}
+			captureInfo.AncillaryData = []any{flowSourceName}
 			context := &Context{CaptureInfo: captureInfo}
 
 			if !*skipchecksum {
@@ -678,13 +654,11 @@ func (service *AssemblerService) ProcessPcapHandle(handle *pcap.Handle, sourceNa
 			}
 
 			service.AssemblerTcp.AssembleWithContext(flow, tcp, context)
-			break
 		case layers.LayerTypeUDP:
 			udp := transport.(*layers.UDP)
 			flow := packet.NetworkLayer().NetworkFlow()
 			captureInfo := packet.Metadata().CaptureInfo
 			service.AssemblerUdp.Assemble(flow, udp, &captureInfo, flowSourceName)
-			break
 		default:
 			// pass
 		}
@@ -704,7 +678,7 @@ func (service *AssemblerService) ProcessPcapHandle(handle *pcap.Handle, sourceNa
 
 	g_db.PcapSetPosition(pcap.Id, count)
 	service.FlushConnections()
-	log.Println("Processed", count - pcap.Position, "packets from", sourceName)
+	log.Println("Processed", count-pcap.Position, "packets from", sourceName)
 }
 
 func (service *AssemblerService) DumpPacket(packet *gopacket.Packet) {

@@ -4,7 +4,7 @@ module.exports = {
 
   ],
   presets: [],
-  darkMode: 'media', // or 'class'
+  darkMode: 'class', // Enable class-based dark mode
   theme: {
     screens: {
       sm: '640px',

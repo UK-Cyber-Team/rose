@@ -27,8 +27,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    expose:
-      - 3000
     depends_on:
       - timescale
       - api
@@ -36,7 +34,6 @@ services:
       - internal
     environment:
       API_SERVER_ENDPOINT: http://api:5000/
-      VIRTUAL_HOST: tulip.h4xx.eu
 
   api:
     build:
@@ -50,6 +47,8 @@ services:
       - internal
     volumes:
       - ${TRAFFIC_DIR_HOST}:${TRAFFIC_DIR_DOCKER}:ro,z
+      - flask-sessions:/tmp/flask_sessions
+      - services-config:/data
     environment:
       TIMESCALE: ${TIMESCALE}
       TULIP_TRAFFIC_DIR: ${TRAFFIC_DIR_DOCKER}
@@ -57,6 +56,8 @@ services:
       TICK_START: ${TICK_START}
       TICK_LENGTH: ${TICK_LENGTH}
       VM_IP: ${VM_IP}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
 
   flagids:
     restart: unless-stopped
@@ -76,6 +77,8 @@ services:
       FLAGID_ENDPOINT: ${FLAGID_ENDPOINT}
       VISUALIZER_URL: ${VISUALIZER_URL}
       DUMP_PCAPS: ${DUMP_PCAPS}
+
+
 
   assembler:
     build:
@@ -131,6 +134,8 @@ services:
 
 volumes:
   timescale-data:
+  flask-sessions:
+  services-config:
 
 networks:
   internal:

@@ -1,9 +1,10 @@
 module go-importer
 
-go 1.19
+go 1.23.0
 
 require (
 	github.com/andybalholm/brotli v1.0.4
+	github.com/chikamim/nilsimsa v0.0.0-20200618014539-84540bbf06dd
 	github.com/cloudflare/ahocorasick v0.0.0-20210425175752-730270c3e184
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gammazero/workerpool v1.1.3
@@ -23,9 +24,9 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 )

@@ -12,10 +12,14 @@ export interface Flow {
   parent_id: Id;
   child_id: Id;
   tags: string[];
+  flags_in: number;
+  flags_out: number;
   flags: string[];
   flagids: string[];
   suricata: number[];
   filename: string;
+  fuzzy_hash: string;
+  similarity: number;
 }
 
 export interface TickInfo {
@@ -65,6 +69,9 @@ export interface FlowsQuery {
   tag_intersection_mode?: "AND" | "OR";
   flags?: string[];
   flagids?: string[];
+  includeFuzzyHashes: string[];
+  excludeFuzzyHashes: string[];
+  similarity: number;
 }
 
 export interface StatsQuery {

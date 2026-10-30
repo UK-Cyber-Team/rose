@@ -1,6 +1,19 @@
-# 🌷 Tulip
+# 🥀 Rose
 
-Tulip is a flow analyzer meant for use during Attack / Defence CTF competitions. It allows players to easily find some traffic related to their service and automatically generates python snippets to replicate attacks.
+> This was named by the Irish!
+
+Rose is the UK Cyber Team's fork of Tulip - a flow analyzer meant for use during Attack / Defence CTF competitions. It allows players to easily find some traffic related to their service and automatically generates python snippets to replicate attacks.
+
+Most of the core functionality in Rose is the same as Tulip, but it has the following additional features, mainly aimed at improving quality of life for teams:
+- Flow similarity filtering
+- Service configuration within the main Tulip interface
+- Per-flow configurable notes
+- Login screens
+- Custom tagging within the main Tulip interface
+- Dark mode
+- Per-flow PCAP downloads
+- Flag-in/out counts on flows containing multiple flags (thanks [Nico](https://github.com/tde-nico)!)
+- Novelty mode :D
 
 ## Origins
 Tulip was developed by Team Europe for use in the first International Cyber Security Challenge. The project is a fork of [flower](https://github.com/secgroup/flower), but it contains quite some changes:
@@ -21,16 +34,30 @@ Tulip was developed by Team Europe for use in the first International Cyber Secu
 ![](./demo_images/demo3.png)
 
 ## Configuration
-Before starting the stack, edit `services/api/configurations.py`:
 
-```
+### Service Configuration
+
+Rose provides a web-based interface for managing service configurations. Once authenticated:
+
+1. Click the **Config** button in the header
+2. Add services by specifying:
+   - Service name (e.g., "Web Service")
+   - IP address (defaults to VM_IP from your environment)
+   - Port number (1-65535)
+3. Click **Apply Changes** to activate the new configuration
+
+### Manual Configuration (Legacy)
+
+You can also manually edit `services/api/configurations.py` if needed:
+
+```python
 vm_ip = "10.60.4.1"
 services = [{"ip": vm_ip, "port": 18080, "name": "BIOMarkt"},
             {"ip": vm_ip, "port": 5555, "name": "SaaS"},
 ]
 ```
 
-You can also edit this during the CTF, just rebuild the `api` service:
+If you manually edit the configuration file, rebuild the `api` service:
 ```
 docker-compose up --build -d api
 ```
@@ -49,6 +76,16 @@ To ingest traffic, it is recommended to create a shared bind mount with the dock
 1. Add a bind to the assembler service so it can read /traffic
 
 The ingestor will use inotify to watch for new pcap's and suricata logs. No need to set a chron job.
+
+The assembler scans the traffic directory recursively. Existing captures in
+subfolders are imported at startup, and new subfolders are watched automatically.
+You can organise captures by service or round without changing the configured
+traffic directory.
+
+The Docker frontend uses Nginx to serve the application on port 3000 and proxy
+`/api/` requests to the API service. Direct links to flow and configuration pages
+continue to work. A WSGI entry point is also available as `wsgi:application` from
+`services/api`; it opens the database pool when loaded.
 
 
 ## Suricata synchronization
@@ -91,4 +128,4 @@ If you have an idea for a new feature, bug fixes, UX improvements, or other cont
 When opening a pull request, please target the `devel` branch.
 
 # Credits
-Tulip was written by [@RickdeJager](https://github.com/rickdejager) and [@Bazumo](https://github.com/bazumo), with additional help from [@Sijisu](https://github.com/sijisu). Thanks to our fellow Team Europe players and coaches for testing, feedback and suggestions. Finally, thanks to the team behind [flower](https://github.com/secgroup/flower) for opensourcing their tooling.
+Tulip was written by [@RickdeJager](https://github.com/rickdejager) and [@Bazumo](https://github.com/bazumo), with additional help from [@Sijisu](https://github.com/sijisu). Rose-specific modifications were written primarily by [@RealJammy](https://github.com/RealJammy). Thanks to our fellow Team Europe players and coaches for testing, feedback and suggestions. Finally, thanks to the team behind [flower](https://github.com/secgroup/flower) for opensourcing their tooling.

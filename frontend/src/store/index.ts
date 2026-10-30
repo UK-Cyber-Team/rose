@@ -6,11 +6,13 @@ import type { TypedUseSelectorHook } from "react-redux";
 import { tulipApi } from "../api";
 
 import filterReducer from "./filter";
+import authReducer from "./auth";
 
 export const store = configureStore({
   reducer: {
     [tulipApi.reducerPath]: tulipApi.reducer,
     filter: filterReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(tulipApi.middleware),

@@ -22,7 +22,15 @@ function base64DecodeUnicode(str: string) : string {
 }
 
 export const tulipApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_PATH }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: API_BASE_PATH,
+    credentials: 'include',
+    prepareHeaders: (headers, { getState }) => {
+      headers.set('Content-Type', 'application/json');
+      return headers;
+    },
+  }),
+  tagTypes: ['Auth', 'Tag', 'Flow'],
   endpoints: (builder) => ({
     getServices: builder.query<Service[], void>({
       query: () => "/services",
@@ -32,6 +40,7 @@ export const tulipApi = createApi({
     }),
     getFlow: builder.query<FullFlow, string>({
       query: (id) => `/flow/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Flow', id }],
       transformResponse: (flow: any): FullFlow => {
         const representations: any = {};
 
@@ -58,6 +67,8 @@ export const tulipApi = createApi({
           parent_id: flow.link_parent_id,
           child_id: flow.link_child_id,
           tags: flow.tags,
+          flags_in: flow.flags_in,
+          flags_out: flow.flags_out,
           flags: flow.flags,
           flagids: flow.flagids,
           filename: flow.pcap_name,
@@ -65,6 +76,8 @@ export const tulipApi = createApi({
           suricata: [],
           signatures: flow.signatures,
           flow: Object.values(representations),
+          fuzzy_hash: flow.fuzzy_hash,
+	  similarity: flow.similarity,
         };
       },
     }),
@@ -91,11 +104,15 @@ export const tulipApi = createApi({
           parent_id: flow.link_parent_id,
           child_id: flow.link_child_id,
           tags: flow.tags,
+          flags_in: flow.flags_in,
+          flags_out: flow.flags_out,
           flags: flow.flags,
           flagids: flow.flagids,
           filename: flow.pcap_name,
           service_tag: "",
           suricata: [],
+          fuzzy_hash: flow.fuzzy_hash,
+          similarity: flow.similarity,
         }));
       },
     }),
@@ -116,6 +133,7 @@ export const tulipApi = createApi({
     }),
     getTags: builder.query<string[], void>({
       query: () => `/tags`,
+      providesTags: ['Tag'],
     }),
     getTickInfo: builder.query<TickInfo, void>({
       query: () => `/tick_info`,
@@ -189,6 +207,104 @@ export const tulipApi = createApi({
       //   }
       // },
     }),
+    createTag: builder.mutation<{ success: boolean; tag: string }, { name: string }>({
+      query: ({ name }) => ({
+        url: `/tags`,
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: { name },
+      }),
+      invalidatesTags: ["Tag"],
+    }),
+    addTagToFlow: builder.mutation<
+      { success: boolean; flow_id: string; tag: string; applied: boolean },
+      { flowId: string; tag: string; apply: boolean }
+    >({
+      query: ({ flowId, tag, apply }) => ({
+        url: `/flow/${flowId}/tag`,
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: { tag, apply },
+      }),
+      invalidatesTags: (_result, _error, arg) => [
+        { type: "Flow", id: arg.flowId },
+      ],
+    }),
+    // Authentication endpoints
+    checkAuthStatus: builder.query<{ authenticated: boolean; auth_required: boolean }, void>({
+      query: () => '/auth/status',
+      providesTags: ['Auth'],
+    }),
+    login: builder.mutation<{ success: boolean; authenticated: boolean }, { password: string }>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
+      invalidatesTags: ['Auth'],
+    }),
+    logout: builder.mutation<{ success: boolean; authenticated: boolean }, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Auth'],
+    }),
+    // Service configuration endpoints
+    getServicesConfig: builder.query<{ services: Service[]; vm_ip: string }, void>({
+      query: () => '/services/config',
+    }),
+    addService: builder.mutation<
+      { success: boolean; service: Service },
+      { name: string; ip: string; port: number }
+    >({
+      query: (service) => ({
+        url: '/services/config',
+        method: 'POST',
+        body: service,
+      }),
+    }),
+    deleteService: builder.mutation<{ success: boolean; removed: Service }, number>({
+      query: (index) => ({
+        url: `/services/config/${index}`,
+        method: 'DELETE',
+      }),
+    }),
+    reloadServices: builder.mutation<
+      { success: boolean; message?: string; warning?: string; services_count?: number },
+      void
+    >({
+      query: () => ({
+        url: '/services/reload',
+        method: 'POST',
+      }),
+    }),
+    // Flow notes endpoints
+    getFlowNotes: builder.query<{ notes: string }, string>({
+      query: (flowId) => `/flow/${flowId}/notes`,
+      providesTags: (result, error, flowId) => [{ type: 'Flow', id: `${flowId}-notes` }],
+    }),
+    updateFlowNotes: builder.mutation<
+      { success: boolean; notes: string },
+      { flowId: string; notes: string }
+    >({
+      query: ({ flowId, notes }) => ({
+        url: `/flow/${flowId}/notes`,
+        method: 'PUT',
+        body: { notes },
+      }),
+      invalidatesTags: (result, error, { flowId }) => [{ type: 'Flow', id: `${flowId}-notes` }],
+    }),
+    // Random flow endpoint
+    getRandomFlow: builder.query<{ id: string }, void>({
+      query: () => '/flow/random',
+    }),
   }),
 });
 
@@ -204,6 +320,19 @@ export const {
   useLazyToFullPythonRequestQuery,
   useToSinglePythonRequestQuery,
   useStarFlowMutation,
+  useCreateTagMutation,
+  useAddTagToFlowMutation,
   useGetStatsQuery,
   useGetUnderAttackQuery,
+  useCheckAuthStatusQuery,
+  useLoginMutation,
+  useLogoutMutation,
+  useGetServicesConfigQuery,
+  useAddServiceMutation,
+  useDeleteServiceMutation,
+  useReloadServicesMutation,
+  useGetFlowNotesQuery,
+  useUpdateFlowNotesMutation,
+  useGetRandomFlowQuery,
+  useLazyGetRandomFlowQuery,
 } = tulipApi;
