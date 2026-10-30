@@ -493,8 +493,8 @@ func (service *AssemblerService) WatchDir(watch_dir string) {
 	}
 
 	for _, file := range files {
-		// accepts files with prefixes that start with .pcap (.pcapng .pcap1 etc)
-		if strings.HasPrefix(filepath.Ext(file.Name()), ".pcap") {
+		// accepts files with extensions containing .pcap (.pcap, .pcapng, .pcap1, .pcap2, etc)
+		if strings.Contains(file.Name(), ".pcap") {
 			service.HandlePcapUri(filepath.Join(watch_dir, file.Name())) //FIXME; this is a little clunky
 		}
 	}
@@ -517,8 +517,8 @@ func (service *AssemblerService) WatchDir(watch_dir string) {
 					return
 				}
 				if event.Op&(fsnotify.Rename|fsnotify.Create|fsnotify.Write) != 0 {
-					// accepts files with prefixes that start with .pcap (.pcapng .pcap1 etc)
-					if strings.HasPrefix(filepath.Ext(event.Name), ".pcap") {
+					// accepts files with extensions containing .pcap (.pcap, .pcapng, .pcap1, .pcap2, etc)
+					if strings.Contains(event.Name, ".pcap") {
 						log.Println("Found new file", event.Name, event.Op.String())
 						time.Sleep(2 * time.Second) // FIXME; bit of race here between file creation and writes.
 						service.HandlePcapUri(event.Name)
