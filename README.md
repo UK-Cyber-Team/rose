@@ -12,6 +12,7 @@ Most of the core functionality in Rose is the same as Tulip, but it has the foll
 - Custom tagging within the main Tulip interface
 - Dark mode
 - Per-flow PCAP downloads
+- Flag-in/out counts on flows containing multiple flags (thanks [Nico](https://github.com/tde-nico)!)
 - Novelty mode :D
 
 ## Origins
@@ -75,6 +76,16 @@ To ingest traffic, it is recommended to create a shared bind mount with the dock
 1. Add a bind to the assembler service so it can read /traffic
 
 The ingestor will use inotify to watch for new pcap's and suricata logs. No need to set a chron job.
+
+The assembler scans the traffic directory recursively. Existing captures in
+subfolders are imported at startup, and new subfolders are watched automatically.
+You can organise captures by service or round without changing the configured
+traffic directory.
+
+The Docker frontend uses Nginx to serve the application on port 3000 and proxy
+`/api/` requests to the API service. Direct links to flow and configuration pages
+continue to work. A WSGI entry point is also available as `wsgi:application` from
+`services/api`; it opens the database pool when loaded.
 
 
 ## Suricata synchronization

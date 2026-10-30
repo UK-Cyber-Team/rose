@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-importer/internal/converters"
+	"go-importer/internal/pcapwatch"
 	"go-importer/internal/pkg/db"
 	"runtime"
 
@@ -22,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
 	"github.com/google/gopacket/ip4defrag"
@@ -476,70 +476,39 @@ func connectToPCAPOverIP(service *AssemblerService, pcapIP string) {
 }
 
 func (service *AssemblerService) WatchDir(watch_dir string) {
-	stat, err := os.Stat(watch_dir)
-	if err != nil {
-		log.Fatal("Failed to open the watch_dir with error: ", err)
-	}
-
-	if !stat.IsDir() {
-		log.Fatal("watch_dir is not a directory")
-	}
-
-	log.Println("Monitoring dir: ", watch_dir)
-
-	files, err := os.ReadDir(watch_dir)
+	watcher, err := pcapwatch.New(service.HandlePcapUri)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	for _, file := range files {
-		// accepts files with extensions containing .pcap (.pcap, .pcapng, .pcap1, .pcap2, etc)
-		if strings.Contains(file.Name(), ".pcap") {
-			service.HandlePcapUri(filepath.Join(watch_dir, file.Name())) //FIXME; this is a little clunky
-		}
-	}
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	defer watcher.Close()
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
-	// Keep running until Interrupt
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				if event.Op&(fsnotify.Rename|fsnotify.Create|fsnotify.Write) != 0 {
-					// accepts files with extensions containing .pcap (.pcap, .pcapng, .pcap1, .pcap2, etc)
-					if strings.Contains(event.Name, ".pcap") {
-						log.Println("Found new file", event.Name, event.Op.String())
-						time.Sleep(2 * time.Second) // FIXME; bit of race here between file creation and writes.
-						service.HandlePcapUri(event.Name)
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("watcher error:", err)
-			}
-		}
-	}()
+	defer signal.Stop(signalChan)
 
-	err = watcher.Add(watch_dir)
-	if err != nil {
+	log.Println("Monitoring dir: ", watch_dir)
+	if err := watcher.Add(watch_dir); err != nil {
 		log.Fatal(err)
 	}
-	<-signalChan
-	log.Println("Watcher stopped")
-
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			if err := watcher.Handle(event); err != nil {
+				log.Println("Failed to handle capture event:", err)
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("watcher error:", err)
+		case <-signalChan:
+			log.Println("Watcher stopped")
+			return
+		}
+	}
 }
 
 func (service *AssemblerService) HandlePcapUri(sourceName string) {
