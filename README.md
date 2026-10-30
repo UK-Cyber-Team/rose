@@ -2,7 +2,17 @@
 
 > This was named by the Irish!
 
-Tulip is a flow analyzer meant for use during Attack / Defence CTF competitions. It allows players to easily find some traffic related to their service and automatically generates python snippets to replicate attacks.
+Rose is the UK Cyber Team's fork of Tulip - a flow analyzer meant for use during Attack / Defence CTF competitions. It allows players to easily find some traffic related to their service and automatically generates python snippets to replicate attacks.
+
+Most of the core functionality in Rose is the same as Tulip, but it has the following additional features, mainly aimed at improving quality of life for teams:
+- Flow similarity filtering
+- Service configuration within the main Tulip interface
+- Per-flow configurable notes
+- Login screens
+- Custom tagging within the main Tulip interface
+- Dark mode
+- Per-flow PCAP downloads
+- Novelty mode :D
 
 ## Origins
 Tulip was developed by Team Europe for use in the first International Cyber Security Challenge. The project is a fork of [flower](https://github.com/secgroup/flower), but it contains quite some changes:
@@ -26,7 +36,7 @@ Tulip was developed by Team Europe for use in the first International Cyber Secu
 
 ### Service Configuration
 
-Tulip provides a web-based interface for managing service configurations. Once authenticated:
+Rose provides a web-based interface for managing service configurations. Once authenticated:
 
 1. Click the **Config** button in the header
 2. Add services by specifying:
@@ -34,8 +44,6 @@ Tulip provides a web-based interface for managing service configurations. Once a
    - IP address (defaults to VM_IP from your environment)
    - Port number (1-65535)
 3. Click **Apply Changes** to activate the new configuration
-
-Services are stored in a persistent configuration file and changes take effect immediately without requiring a container rebuild.
 
 ### Manual Configuration (Legacy)
 
@@ -109,4 +117,4 @@ If you have an idea for a new feature, bug fixes, UX improvements, or other cont
 When opening a pull request, please target the `devel` branch.
 
 # Credits
-Tulip was written by [@RickdeJager](https://github.com/rickdejager) and [@Bazumo](https://github.com/bazumo), with additional help from [@Sijisu](https://github.com/sijisu). Thanks to our fellow Team Europe players and coaches for testing, feedback and suggestions. Finally, thanks to the team behind [flower](https://github.com/secgroup/flower) for opensourcing their tooling.
+Tulip was written by [@RickdeJager](https://github.com/rickdejager) and [@Bazumo](https://github.com/bazumo), with additional help from [@Sijisu](https://github.com/sijisu). Rose-specific modifications were written primarily by [@RealJammy](https://github.com/RealJammy). Thanks to our fellow Team Europe players and coaches for testing, feedback and suggestions. Finally, thanks to the team behind [flower](https://github.com/secgroup/flower) for opensourcing their tooling.
